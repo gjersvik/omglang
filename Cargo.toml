@@ -1,0 +1,7 @@
+[package]
+name = "omglang"
+version = "0.1.0"
+authors = ["Ole Martin Gjersvik <olem@olem.org>"]
+edition = "2018"
+
+[dependencies]

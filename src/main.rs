@@ -1,5 +1,5 @@
-use omglang::hello;
+use omglang::run;
 
 fn main() {
-    hello();
+    run("print 42;");
 }

@@ -5,3 +5,4 @@ authors = ["Ole Martin Gjersvik <olem@olem.org>"]
 edition = "2018"
 
 [dependencies]
+logos = "0.9.7"

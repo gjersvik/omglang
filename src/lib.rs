@@ -31,10 +31,10 @@ enum Exp {
     InValid,
 }
 
-//enum Value {
-//    Nothing,
-//    UInt(u64)
-//}
+enum Value {
+    Nothing,
+    UInt(u64),
+}
 
 fn tokenize(code: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
@@ -59,6 +59,21 @@ fn parse(tokens: &[Token]) -> Exp {
     }
 }
 
+fn run_exp(exp: &Exp) -> Value {
+    match exp {
+        Exp::Print(e) => {
+            let text = match run_exp(&e) {
+                Value::UInt(i) => format!("{}", i),
+                Value::Nothing => format!("Nothing"),
+            };
+            println!("{}", text);
+            return Value::Nothing;
+        }
+        Exp::LiteralUInt(int) => return Value::UInt(*int),
+        Exp::InValid => panic!("Invalid expression found."),
+    }
+}
+
 pub fn run(code: &str) {
     let tokens = tokenize(code);
     for token in &tokens {
@@ -66,6 +81,7 @@ pub fn run(code: &str) {
     }
     let exp = parse(&tokens);
     println!("Exp: {:?}", exp);
-
+    println!("Running program:");
+    run_exp(&exp);
     println!("Program done");
 }

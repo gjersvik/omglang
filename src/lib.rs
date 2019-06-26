@@ -24,8 +24,9 @@ struct Token<'a> {
     slice: &'a str,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Exp {
+    Block(Vec<Exp>),
     Print(Box<Exp>),
     LiteralUInt(u64),
     InValid,
@@ -49,11 +50,39 @@ fn tokenize(code: &str) -> Vec<Token> {
     return tokens;
 }
 
-fn parse(tokens: &[Token]) -> Exp {
-    let token = &tokens[0];
-    let rest = &tokens[1..];
+fn parse_block<'a, I>(tokens: &mut I) -> Exp
+where
+    I: Iterator<Item = &'a Token<'a>>,
+{
+    let mut expressions = Vec::new();
+    loop {
+        let exp = parse(tokens);
+        if exp == Exp::InValid {
+            break;
+        }
+        match tokens.next() {
+            Some(t) => {
+                if t.token_type == TokenType::EndOfExp {
+                    expressions.push(exp)
+                }
+            }
+            None => break,
+        };
+    }
+    return Exp::Block(expressions);
+}
+
+fn parse<'a, I>(tokens: &mut I) -> Exp
+where
+    I: Iterator<Item = &'a Token<'a>>,
+{
+    let token = match tokens.next() {
+        Some(t) => t,
+        None => return Exp::InValid,
+    };
+
     match token.token_type {
-        TokenType::Print => return Exp::Print(Box::new(parse(rest))),
+        TokenType::Print => return Exp::Print(Box::new(parse(tokens))),
         TokenType::Number => return Exp::LiteralUInt(token.slice.parse().unwrap()),
         _ => return Exp::InValid,
     }
@@ -69,6 +98,12 @@ fn run_exp(exp: &Exp) -> Value {
             println!("{}", text);
             return Value::Nothing;
         }
+        Exp::Block(block) => {
+            for e in block {
+                run_exp(e);
+            }
+            return Value::Nothing;
+        }
         Exp::LiteralUInt(int) => return Value::UInt(*int),
         Exp::InValid => panic!("Invalid expression found."),
     }
@@ -79,7 +114,7 @@ pub fn run(code: &str) {
     for token in &tokens {
         println!("Token {:?}: {}", token.token_type, token.slice)
     }
-    let exp = parse(&tokens);
+    let exp = parse_block(&mut tokens.iter());
     println!("Exp: {:?}", exp);
     println!("Running program:");
     run_exp(&exp);

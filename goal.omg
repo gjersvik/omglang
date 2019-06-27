@@ -14,8 +14,8 @@ run (Main) {
     String hello = "";
     String world = "";
 
-    // async block allows for all expressions to be runner at the same time. 
-    // but win only exit the block when all expressions are completed.
+    // async block allows for all expressions to be run at the same time. 
+    // but will only exit the block when all expressions are completed.
     async {
         // next will pause execution until the next event of the type is emitted by someone.
         hello = Hello.next().hello;

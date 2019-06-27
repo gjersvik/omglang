@@ -1,0 +1,37 @@
+// events are records that have some special static methods that allows for event handling.
+event Hello{
+    String hello;
+}
+
+event World{
+    String world;
+}
+
+// run creates a new isolated runtime when an event is triggered.
+// Main is an event that is triggered once when the application starts.
+run (Main) {
+    // just need to decare some variables in this scope so they survive the async block.
+    String hello = "";
+    String world = "";
+
+    // async block allows for all expressions to be runner at the same time. 
+    // but win only exit the block when all expressions are completed.
+    async {
+        // next will pause execution until the next event of the type is emitted by someone.
+        hello = Hello.next().hello;
+        // since this is async block both next will pause at the same time.
+        world = World.next().world;
+    }
+
+    // We don't know if hello or world was set first but we know that both are set now.
+    printLine(hello + world);
+}
+
+run (Main){
+    // emit publishes a new event that may result in new runtime being spawned or other can query for.
+    Hello.emit(new Hello("Hello "));
+}
+
+run (Main){
+    World.emit(new World("world!"));
+}

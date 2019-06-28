@@ -2,7 +2,7 @@
 mod tokens;
 
 use std::vec::Vec;
-use tokens::{tokenize, Token, TokenType};
+use tokens::{TokenType, Tokens};
 
 #[derive(Debug, PartialEq)]
 enum Exp {
@@ -17,36 +17,23 @@ enum Value {
     UInt(u64),
 }
 
-fn parse_block<'a, I>(tokens: &mut I) -> Exp
-where
-    I: Iterator<Item = &'a Token<'a>>,
-{
+fn parse_block(tokens: &mut Tokens) -> Exp {
     let mut expressions = Vec::new();
     loop {
         let exp = parse(tokens);
         if exp == Exp::InValid {
             break;
         }
-        match tokens.next() {
-            Some(t) => {
-                if t.token_type == TokenType::EndOfExp {
-                    expressions.push(exp)
-                }
-            }
-            None => break,
-        };
+        let t = tokens.next();
+        if t.token_type == TokenType::EndOfExp {
+            expressions.push(exp)
+        }
     }
     Exp::Block(expressions)
 }
 
-fn parse<'a, I>(tokens: &mut I) -> Exp
-where
-    I: Iterator<Item = &'a Token<'a>>,
-{
-    let token = match tokens.next() {
-        Some(t) => t,
-        None => return Exp::InValid,
-    };
+fn parse(tokens: &mut Tokens) -> Exp {
+    let token = tokens.next();
 
     match token.token_type {
         TokenType::Print => Exp::Print(Box::new(parse(tokens))),
@@ -77,11 +64,8 @@ fn run_exp(exp: &Exp) -> Value {
 }
 
 pub fn run(code: &str) {
-    let tokens = tokenize(code);
-    for token in &tokens {
-        println!("Token {:?}: {}", token.token_type, token.slice)
-    }
-    let exp = parse_block(&mut tokens.iter());
+    let mut tokens = Tokens::lex(code);
+    let exp = parse_block(&mut tokens);
     println!("Exp: {:?}", exp);
     println!("Running program:");
     run_exp(&exp);

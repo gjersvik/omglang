@@ -23,15 +23,35 @@ pub struct Token<'a> {
     pub slice: &'a str,
 }
 
-pub fn tokenize(code: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
-    let mut lexer = TokenType::lexer(code);
-    while lexer.token != TokenType::End {
-        tokens.push(Token {
-            token_type: lexer.token,
-            slice: lexer.slice(),
-        });
-        lexer.advance();
+pub struct Tokens<'a> {
+    tokens: Vec<Token<'a>>,
+    index: usize,
+}
+
+impl<'a> Tokens<'a> {
+    pub fn lex(code: &'a str) -> Self {
+        let mut tokens = Vec::new();
+        let mut lexer = TokenType::lexer(code);
+        while lexer.token != TokenType::End {
+            tokens.push(Token {
+                token_type: lexer.token,
+                slice: lexer.slice(),
+            });
+            lexer.advance();
+        }
+
+        Tokens { tokens, index: 0 }
     }
-    tokens
+
+    pub fn next(&mut self) -> &Token {
+        self.index += 1;
+        if self.index >= self.tokens.len() {
+            self.index = self.tokens.len() - 1;
+        }
+        self.current()
+    }
+
+    pub fn current(&self) -> &Token {
+        &self.tokens[self.index]
+    }
 }

@@ -1,28 +1,8 @@
-use logos::Logos;
+#![warn(clippy::all)]
+mod tokens;
+
 use std::vec::Vec;
-
-#[derive(Logos, Debug, Clone, Copy, PartialEq)]
-enum TokenType {
-    #[end]
-    End,
-
-    #[error]
-    Error,
-
-    #[token = "print"]
-    Print,
-
-    #[regex = "\\d+"]
-    Number,
-
-    #[token = ";"]
-    EndOfExp,
-}
-
-struct Token<'a> {
-    token_type: TokenType,
-    slice: &'a str,
-}
+use tokens::{tokenize, Token, TokenType};
 
 #[derive(Debug, PartialEq)]
 enum Exp {
@@ -35,19 +15,6 @@ enum Exp {
 enum Value {
     Nothing,
     UInt(u64),
-}
-
-fn tokenize(code: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
-    let mut lexer = TokenType::lexer(code);
-    while lexer.token != TokenType::End {
-        tokens.push(Token {
-            token_type: lexer.token,
-            slice: lexer.slice(),
-        });
-        lexer.advance();
-    }
-    return tokens;
 }
 
 fn parse_block<'a, I>(tokens: &mut I) -> Exp
@@ -69,7 +36,7 @@ where
             None => break,
         };
     }
-    return Exp::Block(expressions);
+    Exp::Block(expressions)
 }
 
 fn parse<'a, I>(tokens: &mut I) -> Exp
@@ -82,9 +49,9 @@ where
     };
 
     match token.token_type {
-        TokenType::Print => return Exp::Print(Box::new(parse(tokens))),
-        TokenType::Number => return Exp::LiteralUInt(token.slice.parse().unwrap()),
-        _ => return Exp::InValid,
+        TokenType::Print => Exp::Print(Box::new(parse(tokens))),
+        TokenType::Number => Exp::LiteralUInt(token.slice.parse().unwrap()),
+        _ => Exp::InValid,
     }
 }
 
@@ -93,18 +60,18 @@ fn run_exp(exp: &Exp) -> Value {
         Exp::Print(e) => {
             let text = match run_exp(&e) {
                 Value::UInt(i) => format!("{}", i),
-                Value::Nothing => format!("Nothing"),
+                Value::Nothing => "Nothing".to_string(),
             };
             println!("{}", text);
-            return Value::Nothing;
+            Value::Nothing
         }
         Exp::Block(block) => {
             for e in block {
                 run_exp(e);
             }
-            return Value::Nothing;
+            Value::Nothing
         }
-        Exp::LiteralUInt(int) => return Value::UInt(*int),
+        Exp::LiteralUInt(int) => Value::UInt(*int),
         Exp::InValid => panic!("Invalid expression found."),
     }
 }

@@ -1,3 +1,4 @@
+#![warn(clippy::all)]
 use clap::{App, Arg};
 use std::fs;
 

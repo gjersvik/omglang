@@ -7,7 +7,7 @@ use tokens::{TokenType, Tokens};
 #[derive(Debug, PartialEq)]
 enum Exp {
     Block(Vec<Exp>),
-    Print(Box<Exp>),
+    Call(String, Vec<Exp>),
     LiteralUInt(u64),
     InValid,
 }
@@ -17,6 +17,15 @@ enum Value {
     UInt(u64),
 }
 
+impl Value {
+    fn to_string(&self) -> String {
+        match self {
+            Value::UInt(i) => format!("{}", i),
+            Value::Nothing => "Nothing".to_string(),
+        }
+    }
+}
+
 fn parse_block(tokens: &mut Tokens) -> Exp {
     let mut expressions = Vec::new();
     loop {
@@ -24,19 +33,41 @@ fn parse_block(tokens: &mut Tokens) -> Exp {
         if exp == Exp::InValid {
             break;
         }
-        let t = tokens.next();
-        if t.token_type == TokenType::EndOfExp {
-            expressions.push(exp)
+        tokens.next();
+        let t = tokens.current();
+        if t.token_type == TokenType::Semicolon {
+            expressions.push(exp);
+            tokens.next();
         }
     }
     Exp::Block(expressions)
 }
 
 fn parse(tokens: &mut Tokens) -> Exp {
-    let token = tokens.next();
+    let token = tokens.current();
 
     match token.token_type {
-        TokenType::Print => Exp::Print(Box::new(parse(tokens))),
+        TokenType::Identifier => {
+            let name = token.slice.to_string();
+            tokens.next();
+            if tokens.current().token_type != TokenType::ParenthesesOpen {
+                return Exp::InValid;
+            }
+            let mut args = Vec::new();
+            if !tokens.expect(TokenType::ParenthesesClose) {
+                loop {
+                    tokens.next();
+                    args.push(parse(tokens));
+                    tokens.next();
+                    match tokens.current().token_type {
+                        TokenType::ParenthesesClose => break,
+                        TokenType::Comma => (),
+                        _ => return Exp::InValid,
+                    };
+                }
+            }
+            Exp::Call(name, args)
+        }
         TokenType::Number => Exp::LiteralUInt(token.slice.parse().unwrap()),
         _ => Exp::InValid,
     }
@@ -44,12 +75,13 @@ fn parse(tokens: &mut Tokens) -> Exp {
 
 fn run_exp(exp: &Exp) -> Value {
     match exp {
-        Exp::Print(e) => {
-            let text = match run_exp(&e) {
-                Value::UInt(i) => format!("{}", i),
-                Value::Nothing => "Nothing".to_string(),
-            };
-            println!("{}", text);
+        Exp::Call(i, args) => {
+            if i != "print" {
+                panic!("Cant find function named {} to call", i);
+            }
+            for exp in args {
+                println!("{}", run_exp(&exp).to_string());
+            }
             Value::Nothing
         }
         Exp::Block(block) => {
@@ -65,6 +97,7 @@ fn run_exp(exp: &Exp) -> Value {
 
 pub fn run(code: &str) {
     let mut tokens = Tokens::lex(code);
+    println!("Tokens: {:?}", tokens);
     let exp = parse_block(&mut tokens);
     println!("Exp: {:?}", exp);
     println!("Running program:");

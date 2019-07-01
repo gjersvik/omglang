@@ -1,3 +1,5 @@
+mod scope;
+
 use crate::parser::Exp;
 
 pub enum Value {

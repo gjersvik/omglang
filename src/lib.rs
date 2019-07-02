@@ -3,9 +3,9 @@ mod parser;
 mod runtime;
 mod tokens;
 
-use tokens::Tokens;
 use parser::parse_block;
-use runtime::run_exp;
+use runtime::Runtime;
+use tokens::Tokens;
 
 pub fn run(code: &str) {
     let mut tokens = Tokens::lex(code);
@@ -13,6 +13,7 @@ pub fn run(code: &str) {
     let exp = parse_block(&mut tokens);
     println!("Exp: {:?}", exp);
     println!("Running program:");
-    run_exp(&exp);
+    let mut runtime = Runtime::new();
+    runtime.run(&exp);
     println!("Program done");
 }

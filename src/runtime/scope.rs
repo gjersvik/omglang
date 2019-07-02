@@ -9,6 +9,17 @@ pub struct Scope {
 }
 
 impl Scope {
+    pub fn new() -> Scope {
+        Self::parent(Option::None)
+    }
+
+    pub fn parent(parent: Option<Arc<Scope>>) -> Scope {
+        Scope {
+            values: HashMap::new(),
+            parent
+        }
+    }
+
     pub fn get(&self, name: &str) -> Arc<Value> {
         match self.values.get(name) {
             Some(v) => v.clone(),

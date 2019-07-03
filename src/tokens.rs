@@ -43,11 +43,14 @@ impl<'a> Tokens<'a> {
     pub fn lex(code: &'a str) -> Self {
         let mut tokens = Vec::new();
         let mut lexer = TokenType::lexer(code);
-        while lexer.token != TokenType::End {
+        loop {
             tokens.push(Token {
                 token_type: lexer.token,
                 slice: lexer.slice(),
             });
+            if lexer.token == TokenType::End {
+                break;
+            }
             lexer.advance();
         }
 
@@ -73,13 +76,61 @@ impl<'a> Tokens<'a> {
         &self.tokens[self.index]
     }
 
-    pub fn get(&self, index: usize) -> &Token {
+    fn get(&self, index: usize) -> &Token {
         if index >= self.tokens.len() {
-            return &Token {
-                token_type: TokenType::End,
-                slice: "",
-            };
+            return &self.tokens[self.tokens.len() - 1];
         }
         &self.tokens[index]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_of_each() {
+        let mut tokens = Tokens::lex("test 42 ( ) , ;");
+        assert_eq!(tokens.current().token_type, TokenType::Identifier);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::Number);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::ParenthesesOpen);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::ParenthesesClose);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::Comma);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::Semicolon);
+        tokens.next();
+        assert_eq!(tokens.current().token_type, TokenType::End);
+    }
+
+    #[test]
+    fn go_pass_end() {
+        let mut tokens = Tokens::lex("42");
+        tokens.next(); // At end.
+        tokens.next(); // over the end.
+        assert_eq!(tokens.current().token_type, TokenType::End);
+    }
+
+    #[test]
+    fn expect_true() {
+        let mut tokens = Tokens::lex("test 42");
+        assert_eq!(tokens.expect(TokenType::Number), true);
+        assert_eq!(tokens.current().token_type, TokenType::Number);
+    }
+
+    #[test]
+    fn expect_false() {
+        let mut tokens = Tokens::lex("test 42");
+        assert_eq!(tokens.expect(TokenType::Semicolon), false);
+        assert_eq!(tokens.current().token_type, TokenType::Identifier);
+    }
+
+    #[test]
+    fn get_pass_end() {
+        let tokens = Tokens::lex("42");
+        assert_eq!(tokens.get(2).token_type, TokenType::End);
     }
 }

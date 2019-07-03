@@ -1,26 +1,11 @@
-mod scope;
+pub mod scope;
+pub mod value;
 
-use crate::parser::Exp;
+use super::{core_lib::global, parser::Exp};
 use scope::Scope;
+use value::Value;
 
-use std::{cmp, fmt, iter::FromIterator, sync::Arc};
-
-#[derive(Debug, PartialEq)]
-pub enum Value {
-    Nothing,
-    UInt(u64),
-    Function(Box<Arc<OmgFn>>),
-}
-
-impl Value {
-    fn to_string(&self) -> String {
-        match self {
-            Value::UInt(i) => format!("{}", i),
-            Value::Nothing => "Nothing".to_string(),
-            Value::Function(_) => "BuiltIn function".to_string(),
-        }
-    }
-}
+use std::iter::FromIterator;
 
 pub struct Runtime {
     local: Scope,
@@ -60,35 +45,4 @@ impl Runtime {
         let iter = expressions.iter().map(|exp| self.run_exp(exp));
         Vec::from_iter(iter)
     }
-}
-
-pub trait OmgFnTr: Fn(&[Value]) -> Value {}
-impl<F> OmgFnTr for F where F: Fn(&[Value]) -> Value + Copy {}
-pub type OmgFn = dyn OmgFnTr<Output = Value>;
-
-impl fmt::Debug for OmgFn {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "OmgFn")
-    }
-}
-
-impl cmp::PartialEq for OmgFn {
-    fn eq(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
-fn print(args: &[Value]) -> Value {
-    let string = Vec::from_iter(args.iter().map(|v| v.to_string())).join(" ");
-    println!("{}", string);
-    Value::Nothing
-}
-
-fn global() -> Arc<Scope> {
-    let mut scope = Scope::new();
-    scope.set(
-        "print".to_string(),
-        Arc::new(Value::Function(Box::new(Arc::new(print)))),
-    );
-    Arc::new(scope)
 }

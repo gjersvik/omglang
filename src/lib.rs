@@ -1,4 +1,5 @@
 #![warn(clippy::all)]
+mod core_lib;
 mod parser;
 mod runtime;
 mod tokens;

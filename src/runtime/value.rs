@@ -21,14 +21,44 @@ pub trait OmgFnTr: Fn(&[Value]) -> Value {}
 impl<F> OmgFnTr for F where F: Fn(&[Value]) -> Value + Copy {}
 pub type OmgFn = dyn OmgFnTr<Output = Value>;
 
+#[cfg_attr(tarpaulin, skip)]
 impl fmt::Debug for OmgFn {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "OmgFn")
     }
 }
 
+#[cfg_attr(tarpaulin, skip)]
 impl cmp::PartialEq for OmgFn {
     fn eq(&self, other: &Self) -> bool {
         self == other
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg_attr(tarpaulin, skip)]
+    fn noop(_: &[Value]) -> Value {
+        Value::Nothing
+    }
+
+    #[test]
+    fn nothing_to_string() {
+        assert_eq!(Value::Nothing.to_string(), "Nothing")
+    }
+
+    #[test]
+    fn int_to_string() {
+        assert_eq!(Value::UInt(42).to_string(), "42")
+    }
+
+    #[test]
+    fn function_to_string() {
+        assert_eq!(
+            Value::Function(Box::new(Arc::new(noop))).to_string(),
+            "BuiltIn function"
+        )
     }
 }

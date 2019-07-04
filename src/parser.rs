@@ -1,7 +1,4 @@
-use crate::tokens::{
-    Tokens,
-    TokenType,
-};
+use crate::tokens::{TokenType, Tokens};
 
 #[derive(Debug, PartialEq)]
 pub enum Exp {
@@ -10,7 +7,6 @@ pub enum Exp {
     LiteralUInt(u64),
     InValid,
 }
-
 
 pub fn parse_block(tokens: &mut Tokens) -> Exp {
     let mut expressions = Vec::new();
@@ -56,5 +52,68 @@ pub fn parse(tokens: &mut Tokens) -> Exp {
         }
         TokenType::Number => Exp::LiteralUInt(token.slice.parse().unwrap()),
         _ => Exp::InValid,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn number() {
+        let mut tokens = Tokens::lex("42");
+        let exp = parse(&mut tokens);
+        assert_eq!(exp, Exp::LiteralUInt(42));
+    }
+
+    #[test]
+    fn call() {
+        let mut tokens = Tokens::lex("print(42)");
+        let exp = parse(&mut tokens);
+        assert_eq!(
+            exp,
+            Exp::Call("print".to_string(), vec![Exp::LiteralUInt(42)])
+        );
+    }
+
+    #[test]
+    fn call_two_args() {
+        let mut tokens = Tokens::lex("print(1,2)");
+        let exp = parse(&mut tokens);
+        assert_eq!(
+            exp,
+            Exp::Call(
+                "print".to_string(),
+                vec![Exp::LiteralUInt(1), Exp::LiteralUInt(2)]
+            )
+        );
+    }
+
+    #[test]
+    fn call_no_open() {
+        let mut tokens = Tokens::lex("print42)");
+        let exp = parse(&mut tokens);
+        assert_eq!(exp, Exp::InValid);
+    }
+
+    #[test]
+    fn call_no_end() {
+        let mut tokens = Tokens::lex("print(42");
+        let exp = parse(&mut tokens);
+        assert_eq!(exp, Exp::InValid);
+    }
+
+    #[test]
+    fn block() {
+        let mut tokens = Tokens::lex("42;");
+        let exp = parse_block(&mut tokens);
+        assert_eq!(exp, Exp::Block(vec![Exp::LiteralUInt(42)]));
+    }
+
+    #[test]
+    fn in_valid() {
+        let mut tokens = Tokens::lex(",");
+        let exp = parse(&mut tokens);
+        assert_eq!(exp, Exp::InValid);
     }
 }

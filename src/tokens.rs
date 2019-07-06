@@ -1,3 +1,5 @@
+use crate::error::Result;
+
 use logos::Logos;
 
 #[derive(Logos, Debug, Clone, Copy, PartialEq)]
@@ -40,7 +42,7 @@ pub struct Tokens<'a> {
 }
 
 impl<'a> Tokens<'a> {
-    pub fn lex(code: &'a str) -> Self {
+    pub fn lex(code: &'a str) -> Result<Self> {
         let mut tokens = Vec::new();
         let mut lexer = TokenType::lexer(code);
         loop {
@@ -54,7 +56,7 @@ impl<'a> Tokens<'a> {
             lexer.advance();
         }
 
-        Tokens { tokens, index: 0 }
+        Ok(Tokens { tokens, index: 0 })
     }
 
     pub fn next(&mut self) {
@@ -90,7 +92,7 @@ mod tests {
 
     #[test]
     fn one_of_each() {
-        let mut tokens = Tokens::lex("test 42 ( ) , ;");
+        let mut tokens = Tokens::lex("test 42 ( ) , ;").unwrap();
         assert_eq!(tokens.current().token_type, TokenType::Identifier);
         tokens.next();
         assert_eq!(tokens.current().token_type, TokenType::Number);
@@ -108,7 +110,7 @@ mod tests {
 
     #[test]
     fn go_pass_end() {
-        let mut tokens = Tokens::lex("42");
+        let mut tokens = Tokens::lex("42").unwrap();
         tokens.next(); // At end.
         tokens.next(); // over the end.
         assert_eq!(tokens.current().token_type, TokenType::End);
@@ -116,21 +118,21 @@ mod tests {
 
     #[test]
     fn expect_true() {
-        let mut tokens = Tokens::lex("test 42");
+        let mut tokens = Tokens::lex("test 42").unwrap();
         assert_eq!(tokens.expect(TokenType::Number), true);
         assert_eq!(tokens.current().token_type, TokenType::Number);
     }
 
     #[test]
     fn expect_false() {
-        let mut tokens = Tokens::lex("test 42");
+        let mut tokens = Tokens::lex("test 42").unwrap();
         assert_eq!(tokens.expect(TokenType::Semicolon), false);
         assert_eq!(tokens.current().token_type, TokenType::Identifier);
     }
 
     #[test]
     fn get_pass_end() {
-        let tokens = Tokens::lex("42");
+        let tokens = Tokens::lex("42").unwrap();
         assert_eq!(tokens.get(2).token_type, TokenType::End);
     }
 }

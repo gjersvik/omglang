@@ -1,9 +1,9 @@
 #![warn(clippy::all)]
 use clap::{App, Arg};
-use std::fs;
 
-use omglang::run;
+use omglang::run_file;
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let matches = App::new("O.M.G. Language")
         .version("0.0.0")
@@ -17,7 +17,8 @@ fn main() {
         )
         .get_matches();
 
-    let source =
-        fs::read_to_string(matches.value_of("SRC_FILE").unwrap()).expect("could not read file");
-    run(&source);
+    match run_file(matches.value_of("SRC_FILE").unwrap()) {
+        Ok(_) => (),
+        Err(err) => eprint!("{}", err),
+    };
 }

@@ -5,17 +5,30 @@ mod parser;
 mod runtime;
 mod tokens;
 
+use error::{Position, Result};
 use parser::parse_block;
 use runtime::Runtime;
 use tokens::Tokens;
 
-pub fn run(code: &str) {
-    let mut tokens = Tokens::lex(code);
-    println!("Tokens: {:?}", tokens);
+use std::fs;
+
+pub use error::OmgError;
+
+pub fn run_file(file: &str) -> Result<()> {
+    let source = load_file(&file)?;
+    let mut tokens = Tokens::lex(&source)?;
     let exp = parse_block(&mut tokens);
-    println!("Exp: {:?}", exp);
-    println!("Running program:");
     let mut runtime = Runtime::new();
     runtime.run(&exp);
-    println!("Program done");
+    Ok(())
+}
+
+fn load_file(file: &str) -> Result<String> {
+    match fs::read_to_string(file) {
+        Ok(s) => Ok(s),
+        Err(err) => Err(OmgError::new(
+            err.to_string(),
+            Position::new(file.to_string(), 0, 0),
+        )),
+    }
 }

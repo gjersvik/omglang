@@ -1,4 +1,4 @@
-use crate::error::{Position, Result};
+use crate::error::{OmgError, Position, Result};
 
 use logos::{Extras, Logos};
 
@@ -69,6 +69,12 @@ impl<'a> Tokens<'a> {
         let mut tokens = Vec::new();
         let mut lexer = TokenType::lexer(code);
         loop {
+            if lexer.token == TokenType::Error {
+                return Err(OmgError::new(
+                    format!("Found unknown character in \"{}\" in file.", lexer.slice()),
+                    Position::new(file.to_string(), lexer.extras.line, lexer.extras.column),
+                ));
+            }
             tokens.push(Token {
                 token_type: lexer.token,
                 slice: lexer.slice(),
@@ -124,7 +130,7 @@ impl<'a> Tokens<'a> {
 #[cfg(test)]
 impl<'a> Tokens<'a> {
     pub fn new_test(code: &'a str) -> Self {
-        Tokens::lex(code, "test_code".to_string()).expect("Failed to tokenize test_data.")
+        Tokens::lex(code, "test_code".to_string()).expect("Failed to tokenize test_data:")
     }
 }
 
@@ -217,5 +223,13 @@ mod tests {
             tokens.position(),
             Position::new("test.omg".to_owned(), 1, 2)
         );
+    }
+
+    #[test]
+    fn unknown_token() {
+        let result = Tokens::lex("test @", "test.omg".to_owned());
+        let err = result.expect_err("@ should not be valid omg code for this test");
+
+        assert_eq!(err.msg, "Found unknown character in \"@\" in file.");
     }
 }

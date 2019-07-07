@@ -18,7 +18,7 @@ impl fmt::Display for OmgError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Position {
     pub src: String,
     pub line: u64,

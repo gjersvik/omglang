@@ -61,14 +61,14 @@ mod tests {
 
     #[test]
     fn number() {
-        let mut tokens = Tokens::lex("42").unwrap();
+        let mut tokens = Tokens::new_test("42");
         let exp = parse(&mut tokens);
         assert_eq!(exp, Exp::LiteralUInt(42));
     }
 
     #[test]
     fn call() {
-        let mut tokens = Tokens::lex("print(42)").unwrap();
+        let mut tokens = Tokens::new_test("print(42)");
         let exp = parse(&mut tokens);
         assert_eq!(
             exp,
@@ -78,7 +78,7 @@ mod tests {
 
     #[test]
     fn call_two_args() {
-        let mut tokens = Tokens::lex("print(1,2)").unwrap();
+        let mut tokens = Tokens::new_test("print(1,2)");
         let exp = parse(&mut tokens);
         assert_eq!(
             exp,
@@ -91,28 +91,28 @@ mod tests {
 
     #[test]
     fn call_no_open() {
-        let mut tokens = Tokens::lex("print42)").unwrap();
+        let mut tokens = Tokens::new_test("print42)");
         let exp = parse(&mut tokens);
         assert_eq!(exp, Exp::InValid);
     }
 
     #[test]
     fn call_no_end() {
-        let mut tokens = Tokens::lex("print(42").unwrap();
+        let mut tokens = Tokens::new_test("print(42");
         let exp = parse(&mut tokens);
         assert_eq!(exp, Exp::InValid);
     }
 
     #[test]
     fn block() {
-        let mut tokens = Tokens::lex("42;").unwrap();
+        let mut tokens = Tokens::new_test("42;");
         let exp = parse_block(&mut tokens);
         assert_eq!(exp, Exp::Block(vec![Exp::LiteralUInt(42)]));
     }
 
     #[test]
     fn in_valid() {
-        let mut tokens = Tokens::lex(",").unwrap();
+        let mut tokens = Tokens::new_test(",");
         let exp = parse(&mut tokens);
         assert_eq!(exp, Exp::InValid);
     }

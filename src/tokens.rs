@@ -14,7 +14,7 @@ impl Extras for TokenExtra {
     fn on_whitespace(&mut self, byte: u8) {
         if byte == 10 {
             self.line += 1;
-            self.column = 0;
+            self.column = 1;
         } else {
             self.column += 1;
         }
@@ -68,6 +68,8 @@ impl<'a> Tokens<'a> {
     pub fn lex(code: &'a str, file: String) -> Result<Self> {
         let mut tokens = Vec::new();
         let mut lexer = TokenType::lexer(code);
+        lexer.extras.line = 1;
+        lexer.extras.column = 1;
         loop {
             if lexer.token == TokenType::Error {
                 return Err(OmgError::new(
@@ -187,30 +189,30 @@ mod tests {
     #[test]
     fn track_column() {
         let mut tokens = Tokens::new_test("test 2 3 4");
-        assert_eq!(tokens.current().column, 0);
+        assert_eq!(tokens.current().column, 1);
         tokens.next();
-        assert_eq!(tokens.current().column, 5);
+        assert_eq!(tokens.current().column, 6);
         tokens.next();
-        assert_eq!(tokens.current().column, 7);
-        tokens.next();
-        assert_eq!(tokens.current().column, 9);
+        assert_eq!(tokens.current().column, 8);
         tokens.next();
         assert_eq!(tokens.current().column, 10);
+        tokens.next();
+        assert_eq!(tokens.current().column, 11);
     }
 
     #[test]
     fn track_line() {
         let mut tokens = Tokens::new_test("test 2\r\n3 4");
-        assert_eq!(tokens.current().line, 0);
-        tokens.next();
-        assert_eq!(tokens.current().line, 0);
-        tokens.next();
         assert_eq!(tokens.current().line, 1);
         tokens.next();
         assert_eq!(tokens.current().line, 1);
         tokens.next();
-        assert_eq!(tokens.current().line, 1);
-        assert_eq!(tokens.current().column, 3);
+        assert_eq!(tokens.current().line, 2);
+        tokens.next();
+        assert_eq!(tokens.current().line, 2);
+        tokens.next();
+        assert_eq!(tokens.current().line, 2);
+        assert_eq!(tokens.current().column, 4);
     }
 
     #[test]
@@ -221,7 +223,7 @@ mod tests {
         tokens.next();
         assert_eq!(
             tokens.position(),
-            Position::new("test.omg".to_owned(), 1, 2)
+            Position::new("test.omg".to_owned(), 2, 3)
         );
     }
 

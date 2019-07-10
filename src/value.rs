@@ -4,7 +4,7 @@ use std::{cmp, fmt, sync::Arc};
 pub enum Value {
     Nothing,
     Int(i64),
-    Function(Box<Arc<OmgFn>>),
+    Function(Arc<&'static OmgFn>),
 }
 
 impl Value {
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn function_to_string() {
         assert_eq!(
-            Value::Function(Box::new(Arc::new(noop))).to_string(),
+            Value::Function(Arc::new(&noop)).to_string(),
             "BuiltIn function"
         )
     }

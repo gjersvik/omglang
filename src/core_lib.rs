@@ -1,4 +1,4 @@
-use super::runtime::{scope::Scope};
+use super::runtime::scope::Scope;
 use crate::value::Value;
 
 use std::{iter::FromIterator, sync::Arc};
@@ -13,7 +13,7 @@ pub fn global() -> Arc<Scope> {
     let mut scope = Scope::new();
     scope.set(
         "print".to_string(),
-        Arc::new(Value::Function(Box::new(Arc::new(print)))),
+        Arc::new(Value::Function(Arc::new(&print))),
     );
     Arc::new(scope)
 }

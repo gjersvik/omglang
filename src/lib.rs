@@ -4,6 +4,7 @@ mod error;
 mod parser;
 mod runtime;
 mod tokens;
+mod value;
 
 use error::{Position, Result};
 use parser::parse_block;

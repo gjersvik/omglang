@@ -1,4 +1,5 @@
-use super::runtime::{scope::Scope, value::Value};
+use super::runtime::{scope::Scope};
+use crate::value::Value;
 
 use std::{iter::FromIterator, sync::Arc};
 

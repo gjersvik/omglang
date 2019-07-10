@@ -1,6 +1,7 @@
 use crate::{
     error::{OmgError, Position, Result},
     tokens::{TokenType, Tokens},
+    value::Value,
 };
 
 #[derive(Debug, PartialEq)]
@@ -19,7 +20,7 @@ impl Exp {
 pub enum ExpValue {
     Block(Vec<Exp>),
     Call(String, Vec<Exp>),
-    LiteralUInt(u64),
+    Value(Value),
 }
 
 pub fn parse_block(tokens: &mut Tokens) -> Result<Exp> {
@@ -80,7 +81,7 @@ pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
             Ok(Exp::new(ExpValue::Call(name, args), pos))
         }
         TokenType::Number => match token.slice.parse() {
-            Ok(i) => Ok(Exp::new(ExpValue::LiteralUInt(i), pos)),
+            Ok(i) => Ok(Exp::new(ExpValue::Value(Value::Int(i)), pos)),
             Err(err) => Err(OmgError::new(
                 format!(
                     "Unable to covert {} into an integer: {}",
@@ -108,7 +109,7 @@ mod tests {
     fn number() {
         let mut tokens = Tokens::new_test("42");
         let exp = parse(&mut tokens).unwrap();
-        assert_eq!(exp.value, ExpValue::LiteralUInt(42));
+        assert_eq!(exp.value, ExpValue::Value(Value::Int(42)));
     }
 
     // #[test]

@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn set_get_value() {
         let mut scope = Scope::new();
-        let value = Arc::new(Value::UInt(42));
+        let value = Arc::new(Value::Int(42));
         scope.set("life".to_string(), value.clone());
 
         assert_eq!(scope.get("life"), value);
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn get_value_from_parent() {
         let mut scope = Scope::new();
-        let value = Arc::new(Value::UInt(42));
+        let value = Arc::new(Value::Int(42));
         scope.set("life".to_string(), value.clone());
         let scope = Scope::parent(Some(Arc::new(scope)));
         assert_eq!(scope.get("life"), value);
@@ -73,9 +73,9 @@ mod tests {
     #[test]
     fn local_overwrite_parent() {
         let mut scope = Scope::new();
-        scope.set("life".to_string(), Arc::new(Value::UInt(126)));
+        scope.set("life".to_string(), Arc::new(Value::Int(126)));
         let mut scope = Scope::parent(Some(Arc::new(scope)));
-        let value = Arc::new(Value::UInt(42));
+        let value = Arc::new(Value::Int(42));
         scope.set("life".to_string(), value.clone());
         assert_eq!(scope.get("life"), value);
     }

@@ -1,16 +1,16 @@
 use std::{cmp, fmt, sync::Arc};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Nothing,
-    UInt(u64),
+    Int(i64),
     Function(Box<Arc<OmgFn>>),
 }
 
 impl Value {
     pub fn to_string(&self) -> String {
         match self {
-            Value::UInt(i) => format!("{}", i),
+            Value::Int(i) => format!("{}", i),
             Value::Nothing => "Nothing".to_string(),
             Value::Function(_) => "BuiltIn function".to_string(),
         }
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn int_to_string() {
-        assert_eq!(Value::UInt(42).to_string(), "42")
+        assert_eq!(Value::Int(42).to_string(), "42")
     }
 
     #[test]

@@ -1,12 +1,11 @@
 pub mod scope;
-pub mod value;
 
 use super::{
     core_lib::global,
     parser::{Exp, ExpValue},
+    value::Value,
 };
 use scope::Scope;
-use value::Value;
 
 use std::iter::FromIterator;
 
@@ -39,7 +38,7 @@ impl Runtime {
                 self.run_list(&block);
                 Value::Nothing
             }
-            ExpValue::LiteralUInt(int) => Value::UInt(*int),
+            ExpValue::Value(value) => value.clone(),
         }
     }
 

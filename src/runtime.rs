@@ -1,7 +1,10 @@
 pub mod scope;
 pub mod value;
 
-use super::{core_lib::global, parser::Exp};
+use super::{
+    core_lib::global,
+    parser::{Exp, ExpValue},
+};
 use scope::Scope;
 use value::Value;
 
@@ -24,20 +27,19 @@ impl Runtime {
     }
 
     fn run_exp(&mut self, exp: &Exp) -> Value {
-        match exp {
-            Exp::Call(i, args) => {
+        match &exp.value {
+            ExpValue::Call(i, args) => {
                 let v = self.local.get(i);
                 match *v {
                     Value::Function(ref function) => function(&self.run_list(args)),
                     _ => panic!("Cant find function named {} to call", i),
                 }
             }
-            Exp::Block(block) => {
+            ExpValue::Block(block) => {
                 self.run_list(&block);
                 Value::Nothing
             }
-            Exp::LiteralUInt(int) => Value::UInt(*int),
-            Exp::InValid => panic!("Invalid expression found."),
+            ExpValue::LiteralUInt(int) => Value::UInt(*int),
         }
     }
 

@@ -17,7 +17,7 @@ pub use error::OmgError;
 pub fn run_file(file: &str) -> Result<()> {
     let source = load_file(&file)?;
     let mut tokens = Tokens::lex(&source, file.to_string())?;
-    let exp = parse_block(&mut tokens);
+    let exp = parse_block(&mut tokens)?;
     let mut runtime = Runtime::new();
     runtime.run(&exp);
     Ok(())

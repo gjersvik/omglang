@@ -1,14 +1,21 @@
 use std::fmt;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct OmgError {
     pub msg: String,
-    pub pos: Position,
+    pub pos: String,
 }
 
 impl OmgError {
-    pub fn new(msg: String, pos: Position) -> Self {
-        OmgError { msg, pos }
+    pub fn new<S>(msg: S, pos: Position) -> Self
+    where
+        S: Into<String>,
+    {
+        OmgError {
+            msg: msg.into(),
+            pos: pos.to_string(),
+        }
     }
 }
 
@@ -18,16 +25,47 @@ impl fmt::Display for OmgError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Position {
-    pub src: String,
+    pub src: Arc<String>,
     pub line: u64,
     pub column: u64,
 }
 
 impl Position {
-    pub fn new(src: String, line: u64, column: u64) -> Self {
-        Position { src, line, column }
+    pub fn new<S>(src: S) -> Self
+    where
+        S: Into<String>,
+    {
+        Position {
+            src: Arc::new(src.into()),
+            line: 1,
+            column: 1,
+        }
+    }
+
+    pub fn with_pos(&self, line: u64, column: u64) -> Self {
+        Position {
+            src: Arc::clone(&self.src),
+            line,
+            column,
+        }
+    }
+
+    pub fn add(&self, count: u64) -> Self {
+        Position {
+            src: Arc::clone(&self.src),
+            line: self.line,
+            column: self.column + count,
+        }
+    }
+
+    pub fn newline(&self) -> Self {
+        Position {
+            src: Arc::clone(&self.src),
+            line: self.line + 1,
+            column: 1,
+        }
     }
 }
 
@@ -45,14 +83,14 @@ mod tests {
 
     #[test]
     fn position() {
-        let pos = Position::new("test.omg".to_owned(), 1, 2);
+        let pos = Position::new("test.omg").with_pos(1, 2);
         let display = format!("{}", pos);
         assert_eq!(display, "test.omg:1:2");
     }
 
     #[test]
     fn omg_error() {
-        let pos = Position::new("test.omg".to_owned(), 1, 2);
+        let pos = Position::new("test.omg").with_pos(1, 2);
         let error = OmgError::new("Test error".to_owned(), pos);
         let display = format!("{}", error);
         assert_eq!(display, "test.omg:1:2: Test error\n");

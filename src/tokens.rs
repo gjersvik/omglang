@@ -8,13 +8,27 @@ pub struct TokenExtra {
     column: u64,
 }
 
+impl TokenExtra {
+    fn update_pos(&mut self, pos: Position) -> Position {
+        let mut pos = pos;
+        while self.line > 0 {
+            pos = pos.newline();
+            self.line -= 1;
+        }
+        pos = pos.add(self.column);
+        self.column = 0;
+
+        return pos;
+    }
+}
+
 impl Extras for TokenExtra {
     fn on_advance(&mut self) {}
 
     fn on_whitespace(&mut self, byte: u8) {
         if byte == 10 {
             self.line += 1;
-            self.column = 1;
+            self.column = 0
         } else {
             self.column += 1;
         }
@@ -53,48 +67,41 @@ pub enum TokenType {
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub slice: &'a str,
-    pub line: u64,
-    pub column: u64,
+    pub pos: Position,
 }
 
 #[derive(Debug)]
 pub struct Tokens<'a> {
     tokens: Vec<Token<'a>>,
     index: usize,
-    file: String,
 }
 
 impl<'a> Tokens<'a> {
-    pub fn lex(code: &'a str, file: String) -> Result<Self> {
+    pub fn lex(code: &'a str, file: &'a str) -> Result<Self> {
         let mut tokens = Vec::new();
         let mut lexer = TokenType::lexer(code);
-        lexer.extras.line = 1;
-        lexer.extras.column = 1;
+        let mut pos = Position::new(file);
         loop {
             if lexer.token == TokenType::Error {
                 return Err(OmgError::new(
                     format!("Found unknown character in \"{}\" in file.", lexer.slice()),
-                    Position::new(file.to_string(), lexer.extras.line, lexer.extras.column),
+                    pos,
                 ));
             }
             tokens.push(Token {
                 token_type: lexer.token,
                 slice: lexer.slice(),
-                line: lexer.extras.line,
-                column: lexer.extras.column,
+                pos: pos.clone(),
             });
             if lexer.token == TokenType::End {
                 break;
             }
-            lexer.extras.column += lexer.slice().len() as u64;
+            pos = pos.add(lexer.slice().len() as u64);
             lexer.advance();
+            pos = lexer.extras.update_pos(pos);
         }
 
-        Ok(Tokens {
-            tokens,
-            index: 0,
-            file,
-        })
+        Ok(Tokens { tokens, index: 0 })
     }
 
     pub fn next(&mut self) {
@@ -117,8 +124,7 @@ impl<'a> Tokens<'a> {
     }
 
     pub fn position(&self) -> Position {
-        let token = self.current();
-        Position::new(self.file.to_string(), token.line, token.column)
+        self.current().pos.clone()
     }
 
     fn get(&self, index: usize) -> &Token {
@@ -132,7 +138,7 @@ impl<'a> Tokens<'a> {
 #[cfg(test)]
 impl<'a> Tokens<'a> {
     pub fn new_test(code: &'a str) -> Self {
-        Tokens::lex(code, "test_code".to_string()).expect("Failed to tokenize test_data:")
+        Tokens::lex(code, "test_code").expect("Failed to tokenize test_data:")
     }
 }
 
@@ -189,47 +195,44 @@ mod tests {
     #[test]
     fn track_column() {
         let mut tokens = Tokens::new_test("test 2 3 4");
-        assert_eq!(tokens.current().column, 1);
+        assert_eq!(tokens.current().pos.column, 1);
         tokens.next();
-        assert_eq!(tokens.current().column, 6);
+        assert_eq!(tokens.current().pos.column, 6);
         tokens.next();
-        assert_eq!(tokens.current().column, 8);
+        assert_eq!(tokens.current().pos.column, 8);
         tokens.next();
-        assert_eq!(tokens.current().column, 10);
+        assert_eq!(tokens.current().pos.column, 10);
         tokens.next();
-        assert_eq!(tokens.current().column, 11);
+        assert_eq!(tokens.current().pos.column, 11);
     }
 
     #[test]
     fn track_line() {
         let mut tokens = Tokens::new_test("test 2\r\n3 4");
-        assert_eq!(tokens.current().line, 1);
+        assert_eq!(tokens.current().pos.line, 1);
         tokens.next();
-        assert_eq!(tokens.current().line, 1);
+        assert_eq!(tokens.current().pos.line, 1);
         tokens.next();
-        assert_eq!(tokens.current().line, 2);
+        assert_eq!(tokens.current().pos.line, 2);
         tokens.next();
-        assert_eq!(tokens.current().line, 2);
+        assert_eq!(tokens.current().pos.line, 2);
         tokens.next();
-        assert_eq!(tokens.current().line, 2);
-        assert_eq!(tokens.current().column, 4);
+        assert_eq!(tokens.current().pos.line, 2);
+        assert_eq!(tokens.current().pos.column, 4);
     }
 
     #[test]
     fn position() {
-        let mut tokens = Tokens::lex("test 2\r\n3 4", "test.omg".to_owned()).unwrap();
+        let mut tokens = Tokens::lex("test 2\r\n3 4", "test.omg").unwrap();
         tokens.next();
         tokens.next();
         tokens.next();
-        assert_eq!(
-            tokens.position(),
-            Position::new("test.omg".to_owned(), 2, 3)
-        );
+        assert_eq!(tokens.position(), Position::new("test.omg").with_pos(2, 3));
     }
 
     #[test]
     fn unknown_token() {
-        let result = Tokens::lex("test @", "test.omg".to_owned());
+        let result = Tokens::lex("test @", "test.omg");
         let err = result.expect_err("@ should not be valid omg code for this test");
 
         assert_eq!(err.msg, "Found unknown character in \"@\" in file.");

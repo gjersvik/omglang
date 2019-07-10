@@ -17,7 +17,7 @@ pub use error::OmgError;
 
 pub fn run_file(file: &str) -> Result<()> {
     let source = load_file(&file)?;
-    let mut tokens = Tokens::lex(&source, file.to_string())?;
+    let mut tokens = Tokens::lex(&source, file)?;
     let exp = parse_block(&mut tokens)?;
     let mut runtime = Runtime::new();
     runtime.run(&exp);
@@ -29,7 +29,7 @@ fn load_file(file: &str) -> Result<String> {
         Ok(s) => Ok(s),
         Err(err) => Err(OmgError::new(
             err.to_string(),
-            Position::new(file.to_string(), 0, 0),
+            Position::new(file),
         )),
     }
 }

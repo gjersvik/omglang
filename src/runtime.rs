@@ -1,10 +1,6 @@
 pub mod scope;
 
-use super::{
-    core_lib::global,
-    parser::{Exp, ExpValue},
-    value::Value,
-};
+use super::{core_lib::global, parser::Exp, value::Value};
 use scope::Scope;
 
 use std::iter::FromIterator;
@@ -26,19 +22,19 @@ impl Runtime {
     }
 
     fn run_exp(&mut self, exp: &Exp) -> Value {
-        match &exp.value {
-            ExpValue::Call(i, args) => {
-                let v = self.local.get(i);
+        match &exp {
+            Exp::Call(call) => {
+                let v = self.local.get(&call.name);
                 match *v {
-                    Value::Function(ref function) => function(&self.run_list(args)),
-                    _ => panic!("Cant find function named {} to call", i),
+                    Value::Function(ref function) => function(&self.run_list(&call.args)),
+                    _ => panic!("Cant find function named {} to call", call.name),
                 }
             }
-            ExpValue::Block(block) => {
-                self.run_list(&block);
+            Exp::Block(block) => {
+                self.run_list(&block.statements);
                 Value::Nothing
             }
-            ExpValue::Value(value) => value.clone(),
+            Exp::Literal(literal) => literal.value.clone(),
         }
     }
 

@@ -20,16 +20,13 @@ pub fn run_file(file: &str) -> Result<()> {
     let mut tokens = Tokens::lex(&source, file)?;
     let exp = parse_block(&mut tokens)?;
     let mut runtime = Runtime::new();
-    runtime.run(&exp);
+    runtime.run(&exp)?;
     Ok(())
 }
 
 fn load_file(file: &str) -> Result<String> {
     match fs::read_to_string(file) {
         Ok(s) => Ok(s),
-        Err(err) => Err(OmgError::new(
-            err.to_string(),
-            Position::new(file),
-        )),
+        Err(err) => Err(OmgError::new(err.to_string(), Position::new(file))),
     }
 }

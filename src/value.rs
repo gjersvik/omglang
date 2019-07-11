@@ -1,10 +1,12 @@
-use std::{cmp, fmt, sync::Arc};
+use im::HashMap;
 
-#[derive(Debug, PartialEq, Clone)]
+use crate::core_lib::Native;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Value {
     Nothing,
     Int(i64),
-    Function(Arc<&'static OmgFn>),
+    NativeFunction(Native),
 }
 
 impl Value {
@@ -12,37 +14,16 @@ impl Value {
         match self {
             Value::Int(i) => format!("{}", i),
             Value::Nothing => "Nothing".to_string(),
-            Value::Function(_) => "BuiltIn function".to_string(),
+            Value::NativeFunction(_) => "BuiltIn function".to_string(),
         }
     }
 }
 
-pub trait OmgFnTr: Fn(&[Value]) -> Value {}
-impl<F> OmgFnTr for F where F: Fn(&[Value]) -> Value + Copy {}
-pub type OmgFn = dyn OmgFnTr<Output = Value>;
-
-#[cfg_attr(tarpaulin, skip)]
-impl fmt::Debug for OmgFn {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "OmgFn")
-    }
-}
-
-#[cfg_attr(tarpaulin, skip)]
-impl cmp::PartialEq for OmgFn {
-    fn eq(&self, other: &Self) -> bool {
-        self == other
-    }
-}
+pub type Scope = HashMap<String, Value>;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[cfg_attr(tarpaulin, skip)]
-    fn noop(_: &[Value]) -> Value {
-        Value::Nothing
-    }
 
     #[test]
     fn nothing_to_string() {
@@ -57,7 +38,7 @@ mod tests {
     #[test]
     fn function_to_string() {
         assert_eq!(
-            Value::Function(Arc::new(&noop)).to_string(),
+            Value::NativeFunction(Native::Print).to_string(),
             "BuiltIn function"
         )
     }

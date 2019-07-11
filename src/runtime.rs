@@ -1,23 +1,19 @@
-pub mod scope;
+use im::Vector;
 
 use super::{
-    core_lib::global,
     error::{OmgError, Result},
     parser::Exp,
-    value::Value,
+    value::{Value, Scope},
 };
-use scope::Scope;
+
 
 pub struct Runtime {
     local: Scope,
 }
 
 impl Runtime {
-    pub fn new() -> Runtime {
-        let g = global();
-        Runtime {
-            local: Scope::parent(Some(g)),
-        }
+    pub fn new(global: &Scope) -> Runtime {
+        Runtime { local: global.clone() }
     }
 
     pub fn run(&mut self, exp: &Exp) -> Result<Value> {
@@ -27,9 +23,13 @@ impl Runtime {
     fn run_exp(&mut self, exp: &Exp) -> Result<Value> {
         match &exp {
             Exp::Call(call) => {
-                let v = self.local.get(&call.name);
-                match *v {
-                    Value::Function(ref function) => Ok(function(&self.run_list(&call.args)?)),
+                let v = self
+                    .local
+                    .get(&call.name)
+                    .unwrap_or(&Value::Nothing)
+                    .clone();
+                match v {
+                    Value::NativeFunction(native) => Ok(native.call(self.run_list(&call.args)?)),
                     _ => Err(OmgError::new(
                         format!("Cant find function named {} to call", call.name),
                         call.pos.clone(),
@@ -44,7 +44,7 @@ impl Runtime {
         }
     }
 
-    fn run_list(&mut self, expressions: &[Exp]) -> Result<Vec<Value>> {
+    fn run_list(&mut self, expressions: &[Exp]) -> Result<Vector<Value>> {
         expressions.iter().map(|exp| self.run_exp(exp)).collect()
     }
 }

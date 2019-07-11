@@ -1,7 +1,7 @@
 #![warn(clippy::all)]
 use clap::{App, Arg};
 
-use omglang::run_file;
+use omglang::OmgLang;
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
@@ -17,7 +17,8 @@ fn main() {
         )
         .get_matches();
 
-    match run_file(matches.value_of("SRC_FILE").unwrap()) {
+    let omg = OmgLang::new();
+    match omg.run_file(matches.value_of("SRC_FILE").unwrap()) {
         Ok(_) => (),
         Err(err) => eprint!("{}", err),
     };

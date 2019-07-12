@@ -29,6 +29,7 @@ impl OmgLang {
         OmgLang { global: global() }
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn run_file(&self, file: &str) -> Result<()> {
         let source = OmgLang::load_file(&file)?;
         let mut tokens = Tokens::lex(&source, file)?;
@@ -38,10 +39,22 @@ impl OmgLang {
         Ok(())
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     fn load_file(file: &str) -> Result<String> {
         match fs::read_to_string(file) {
             Ok(s) => Ok(s),
             Err(err) => Err(OmgError::new(err.to_string(), Position::new(file))),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn global_test() {
+        let omg = OmgLang::new();
+        assert_eq!(omg.global, global());
     }
 }

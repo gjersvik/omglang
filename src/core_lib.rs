@@ -15,6 +15,7 @@ impl Native {
     }
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn print(args: Vector<Value>) -> Value {
     let string = args
         .iter()
@@ -28,5 +29,19 @@ fn print(args: Vector<Value>) -> Value {
 pub fn global() -> Scope {
     hashmap! {
         "print".to_string() => Value::NativeFunction(Native::Print)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn global_test() {
+        let global = global();
+        assert_eq!(
+            *global.get("print").unwrap(),
+            Value::NativeFunction(Native::Print)
+        );
     }
 }

@@ -31,15 +31,15 @@ pub enum Exp {
 }
 
 impl Exp {
-    fn new_block(statements: Vec<Exp>, pos: Position) -> Exp {
+    pub fn new_block(statements: Vec<Exp>, pos: Position) -> Exp {
         Exp::Block(Block { statements, pos })
     }
 
-    fn new_call(name: String, args: Vec<Exp>, pos: Position) -> Exp {
+    pub fn new_call(name: String, args: Vec<Exp>, pos: Position) -> Exp {
         Exp::Call(Call { name, args, pos })
     }
 
-    fn new_literal(value: Value, pos: Position) -> Exp {
+    pub fn new_literal(value: Value, pos: Position) -> Exp {
         Exp::Literal(Literal { value, pos })
     }
 }

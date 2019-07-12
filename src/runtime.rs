@@ -3,9 +3,8 @@ use im::Vector;
 use super::{
     error::{OmgError, Result},
     parser::Exp,
-    value::{Value, Scope},
+    value::{Scope, Value},
 };
-
 
 pub struct Runtime {
     local: Scope,
@@ -13,7 +12,9 @@ pub struct Runtime {
 
 impl Runtime {
     pub fn new(global: &Scope) -> Runtime {
-        Runtime { local: global.clone() }
+        Runtime {
+            local: global.clone(),
+        }
     }
 
     pub fn run(&mut self, exp: &Exp) -> Result<Value> {
@@ -46,5 +47,39 @@ impl Runtime {
 
     fn run_list(&mut self, expressions: &[Exp]) -> Result<Vector<Value>> {
         expressions.iter().map(|exp| self.run_exp(exp)).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::Position;
+
+    #[test]
+    fn literal() {
+        let mut run = Runtime::new(&Scope::new());
+
+        let value = Value::Int(42);
+        let exp = Exp::new_literal(value.clone(), Position::new("test"));
+        assert_eq!(run.run(&exp).unwrap(), value);
+    }
+
+    #[test]
+    fn block() {
+        let mut run = Runtime::new(&Scope::new());
+
+        let exp = Exp::new_block(
+            vec![Exp::new_literal(Value::Int(42), Position::new("test"))],
+            Position::new("test"),
+        );
+        assert_eq!(run.run(&exp).unwrap(), Value::Nothing);
+    }
+
+    #[test]
+    fn call_not_found() {
+        let mut run = Runtime::new(&Scope::new());
+
+        let exp = Exp::new_call("test".to_string(), Vec::new(), Position::new("test"));
+        run.run(&exp).unwrap_err();
     }
 }

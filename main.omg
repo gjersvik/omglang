@@ -1,3 +1,4 @@
 test = 42;
 copy_of_test = test;
 print(test, copy_of_test);
+print(true, false);

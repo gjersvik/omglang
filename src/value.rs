@@ -7,6 +7,8 @@ pub enum Value {
     Nothing,
     Int(i64),
     NativeFunction(Native),
+    True,
+    False,
 }
 
 impl Value {
@@ -15,6 +17,8 @@ impl Value {
             Value::Int(i) => format!("{}", i),
             Value::Nothing => "Nothing".to_string(),
             Value::NativeFunction(_) => "BuiltIn function".to_string(),
+            Value::True => "True".to_string(),
+            Value::False => "False".to_string(),
         }
     }
 }

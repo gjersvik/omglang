@@ -50,6 +50,12 @@ pub enum TokenType {
     #[regex = "\\d+"]
     Number,
 
+    #[token = "true"]
+    True,
+
+    #[token = "false"]
+    False,
+
     #[token = "("]
     ParenthesesOpen,
 

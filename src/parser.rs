@@ -104,6 +104,8 @@ pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
                 tokens.position(),
             )),
         },
+        TokenType::True => Ok(Exp::new_literal(Value::True, tokens.position())),
+        TokenType::False => Ok(Exp::new_literal(Value::False, tokens.position())),
         _ => Err(OmgError::new(
             format!(
                 "Expected identifier or number found {}",

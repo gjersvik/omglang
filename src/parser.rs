@@ -24,10 +24,25 @@ pub struct Literal {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Assignment {
+    pub name: String,
+    pub value: Box<Exp>,
+    pub pos: Position,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Variable {
+    pub name: String,
+    pub pos: Position,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Exp {
     Block(Block),
     Call(Call),
     Literal(Literal),
+    Assignment(Assignment),
+    Variable(Variable),
 }
 
 impl Exp {
@@ -41,6 +56,14 @@ impl Exp {
 
     pub fn new_literal(value: Value, pos: Position) -> Exp {
         Exp::Literal(Literal { value, pos })
+    }
+
+    pub fn new_assignment(name: String, value: Box<Exp>, pos: Position) -> Exp {
+        Exp::Assignment(Assignment { name, value, pos })
+    }
+
+    pub fn new_variable(name: String, pos: Position) -> Exp {
+        Exp::Variable(Variable { name, pos })
     }
 }
 
@@ -68,41 +91,10 @@ pub fn parse_block(tokens: &mut Tokens) -> Result<Exp> {
 }
 
 pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
-    let token = tokens.current();
-    let pos = tokens.position();
-
-    match token.token_type {
-        TokenType::Identifier => {
-            let name = token.slice.to_string();
-            tokens.next();
-            if tokens.current().token_type != TokenType::ParenthesesOpen {
-                return Err(OmgError::new(
-                    format!("Expected ( found {}", tokens.current().slice),
-                    tokens.position(),
-                ));
-            }
-            let mut args = Vec::new();
-            if !tokens.expect(TokenType::ParenthesesClose) {
-                loop {
-                    tokens.next();
-                    args.push(parse(tokens)?);
-                    tokens.next();
-                    match tokens.current().token_type {
-                        TokenType::ParenthesesClose => break,
-                        TokenType::Comma => (),
-                        _ => {
-                            return Err(OmgError::new(
-                                format!("Expected ) or , found {}", tokens.current().slice),
-                                tokens.position(),
-                            ))
-                        }
-                    };
-                }
-            }
-            Ok(Exp::new_call(name, args, pos))
-        }
-        TokenType::Number => match token.slice.parse() {
-            Ok(i) => Ok(Exp::new_literal(Value::Int(i), pos)),
+    match tokens.current().token_type {
+        TokenType::Identifier => parse_identifier(tokens),
+        TokenType::Number => match tokens.current().slice.parse() {
+            Ok(i) => Ok(Exp::new_literal(Value::Int(i), tokens.position())),
             Err(err) => Err(OmgError::new(
                 format!(
                     "Unable to covert {} into an integer: {}",
@@ -120,6 +112,50 @@ pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
             tokens.position(),
         )),
     }
+}
+
+fn parse_identifier(tokens: &mut Tokens) -> Result<Exp> {
+    match tokens.peek().token_type {
+        TokenType::ParenthesesOpen => parse_call(tokens),
+        TokenType::Assignment => {
+            let name = tokens.slice().to_string();
+            let pos = tokens.position();
+            tokens.next(); // at assignment
+            tokens.next(); // at next expression
+            let exp = parse(tokens)?;
+            Ok(Exp::new_assignment(name, Box::new(exp), pos))
+        }
+        _ => Ok(Exp::new_variable(
+            tokens.slice().to_string(),
+            tokens.position(),
+        )),
+    }
+}
+
+fn parse_call(tokens: &mut Tokens) -> Result<Exp> {
+    let token = tokens.current();
+    let pos = tokens.position();
+    let name = token.slice.to_string();
+    tokens.next(); // ParenthesesOpen
+    let mut args = Vec::new();
+    if !tokens.expect(TokenType::ParenthesesClose) {
+        loop {
+            tokens.next();
+            args.push(parse(tokens)?);
+            tokens.next();
+            match tokens.current().token_type {
+                TokenType::ParenthesesClose => break,
+                TokenType::Comma => (),
+                _ => {
+                    return Err(OmgError::new(
+                        format!("Expected ) or , found {}", tokens.current().slice),
+                        tokens.position(),
+                    ))
+                }
+            };
+        }
+    }
+    Ok(Exp::new_call(name, args, pos))
 }
 
 #[cfg(test)]
@@ -152,11 +188,29 @@ mod tests {
             }
         }
 
+        fn assignment(&self) -> Result<&Assignment> {
+            if let Exp::Assignment(exp) = self {
+                Ok(&exp)
+            } else {
+                Err(self.type_error("Assignment"))
+            }
+        }
+
+        fn variable(&self) -> Result<&Variable> {
+            if let Exp::Variable(exp) = self {
+                Ok(&exp)
+            } else {
+                Err(self.type_error("Variable"))
+            }
+        }
+
         fn position(&self) -> Position {
             match self {
                 Exp::Block(b) => b.pos.clone(),
                 Exp::Call(c) => c.pos.clone(),
                 Exp::Literal(l) => l.pos.clone(),
+                Exp::Assignment(a) => a.pos.clone(),
+                Exp::Variable(v) => v.pos.clone(),
             }
         }
 
@@ -165,6 +219,8 @@ mod tests {
                 Exp::Block(_) => "Block",
                 Exp::Call(_) => "Call",
                 Exp::Literal(_) => "Literal",
+                Exp::Assignment(_) => "Assignment",
+                Exp::Variable(_) => "Variable",
             }
         }
 
@@ -213,12 +269,6 @@ mod tests {
     }
 
     #[test]
-    fn call_no_open() {
-        let mut tokens = Tokens::new_test("print42)");
-        parse(&mut tokens).unwrap_err();
-    }
-
-    #[test]
     fn call_no_end() {
         let mut tokens = Tokens::new_test("print(42");
         parse(&mut tokens).unwrap_err();
@@ -237,6 +287,24 @@ mod tests {
     fn block_error() {
         let mut tokens = Tokens::new_test("42(");
         parse_block(&mut tokens).unwrap_err();
+    }
+
+    #[test]
+    fn assignment() {
+        let mut tokens = Tokens::new_test("test = 42");
+        let exp = parse(&mut tokens).unwrap();
+        let assignment = exp.assignment().unwrap();
+        assert_eq!(assignment.name, "test");
+        let value = assignment.value.literal().unwrap();
+        assert_eq!(value.value, Value::Int(42));
+    }
+
+    #[test]
+    fn variable() {
+        let mut tokens = Tokens::new_test("test");
+        let exp = parse(&mut tokens).unwrap();
+        let variable = exp.variable().unwrap();
+        assert_eq!(variable.name, "test");
     }
 
     #[test]

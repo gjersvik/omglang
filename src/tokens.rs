@@ -61,6 +61,9 @@ pub enum TokenType {
 
     #[token = ";"]
     Semicolon,
+
+    #[token = "="]
+    Assignment,
 }
 
 #[derive(Debug)]
@@ -123,8 +126,16 @@ impl<'a> Tokens<'a> {
         &self.tokens[self.index]
     }
 
+    pub fn peek(&self) -> &Token {
+        self.get(self.index + 1)
+    }
+
     pub fn position(&self) -> Position {
         self.current().pos.clone()
+    }
+
+    pub fn slice(&self) -> &str {
+        self.current().slice
     }
 
     fn get(&self, index: usize) -> &Token {
@@ -228,6 +239,12 @@ mod tests {
         tokens.next();
         tokens.next();
         assert_eq!(tokens.position(), Position::new("test.omg").with_pos(2, 3));
+    }
+
+    #[test]
+    fn slice() {
+        let tokens = Tokens::lex("test", "test.omg").unwrap();
+        assert_eq!(tokens.slice(), "test");
     }
 
     #[test]

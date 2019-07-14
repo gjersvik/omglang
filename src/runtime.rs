@@ -22,7 +22,7 @@ impl Runtime {
     }
 
     fn run_exp(&mut self, exp: &Exp) -> Result<Value> {
-        match &exp {
+        match exp {
             Exp::Call(call) => {
                 let v = self
                     .local
@@ -42,6 +42,16 @@ impl Runtime {
                 Ok(Value::Nothing)
             }
             Exp::Literal(literal) => Ok(literal.value.clone()),
+            Exp::Assignment(assignment) => {
+                let value = self.run_exp(&assignment.value)?;
+                self.local.insert(assignment.name.clone(), value);
+                Ok(Value::Nothing)
+            }
+            Exp::Variable(variable) => Ok(self
+                .local
+                .get(&variable.name)
+                .unwrap_or(&Value::Nothing)
+                .clone()),
         }
     }
 
@@ -81,5 +91,18 @@ mod tests {
 
         let exp = Exp::new_call("test".to_string(), Vec::new(), Position::new("test"));
         run.run(&exp).unwrap_err();
+    }
+
+    #[test]
+    fn set_get_variable() {
+        let mut run = Runtime::new(&Scope::new());
+        let set = Exp::new_assignment(
+            "test".to_string(),
+            Box::new(Exp::new_literal(Value::Int(42), Position::new("test"))),
+            Position::new("test"),
+        );
+        run.run(&set).unwrap();
+        let get = Exp::new_variable("test".to_string(), Position::new("test"));
+        assert_eq!(run.run(&get).unwrap(), Value::Int(42));
     }
 }

@@ -70,6 +70,10 @@ pub enum TokenType {
 
     #[token = "="]
     Assignment,
+
+    #[token = "+"]
+    OpAdd,
+
 }
 
 #[derive(Debug)]

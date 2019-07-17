@@ -37,12 +37,20 @@ pub struct Variable {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct OpAdd {
+    pub lhs: Box<Exp>,
+    pub rhs: Box<Exp>,
+    pub pos: Position,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Exp {
     Block(Block),
     Call(Call),
     Literal(Literal),
     Assignment(Assignment),
     Variable(Variable),
+    OpAdd(OpAdd),
 }
 
 impl Exp {
@@ -64,6 +72,21 @@ impl Exp {
 
     pub fn new_variable(name: String, pos: Position) -> Exp {
         Exp::Variable(Variable { name, pos })
+    }
+
+    pub fn new_op_add(lhs: Box<Exp>, rhs: Box<Exp>, pos: Position) -> Exp {
+        Exp::OpAdd(OpAdd { lhs, rhs, pos })
+    }
+
+    fn position(&self) -> Position {
+        match self {
+            Exp::Block(b) => b.pos.clone(),
+            Exp::Call(c) => c.pos.clone(),
+            Exp::Literal(l) => l.pos.clone(),
+            Exp::Assignment(a) => a.pos.clone(),
+            Exp::Variable(v) => v.pos.clone(),
+            Exp::OpAdd(a) => a.pos.clone(),
+        }
     }
 }
 
@@ -91,10 +114,11 @@ pub fn parse_block(tokens: &mut Tokens) -> Result<Exp> {
 }
 
 pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
-    match tokens.current().token_type {
+    // parse left hand side;
+    let lhs = match tokens.current().token_type {
         TokenType::Identifier => parse_identifier(tokens),
         TokenType::Number => match tokens.current().slice.parse() {
-            Ok(i) => Ok(Exp::new_literal(Value::Int(i), tokens.position())),
+            Ok(i) => Ok(Exp::new_literal(Value::Number(i), tokens.position())),
             Err(err) => Err(OmgError::new(
                 format!(
                     "Unable to covert {} into an integer: {}",
@@ -113,6 +137,17 @@ pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
             ),
             tokens.position(),
         )),
+    }?;
+
+    match tokens.peek().token_type {
+        TokenType::OpAdd => {
+            tokens.next(); // at OpAdd
+            tokens.next(); // at next expression
+            let rhs = parse(tokens)?;
+            let pos = lhs.position();
+            Ok(Exp::new_op_add(Box::new(lhs), Box::new(rhs), pos))
+        }
+        _ => Ok(lhs),
     }
 }
 
@@ -206,13 +241,11 @@ mod tests {
             }
         }
 
-        fn position(&self) -> Position {
-            match self {
-                Exp::Block(b) => b.pos.clone(),
-                Exp::Call(c) => c.pos.clone(),
-                Exp::Literal(l) => l.pos.clone(),
-                Exp::Assignment(a) => a.pos.clone(),
-                Exp::Variable(v) => v.pos.clone(),
+        fn op_add(&self) -> Result<&OpAdd> {
+            if let Exp::OpAdd(exp) = self {
+                Ok(&exp)
+            } else {
+                Err(self.type_error("OpAdd"))
             }
         }
 
@@ -223,6 +256,7 @@ mod tests {
                 Exp::Literal(_) => "Literal",
                 Exp::Assignment(_) => "Assignment",
                 Exp::Variable(_) => "Variable",
+                Exp::OpAdd(_) => "OpAdd",
             }
         }
 
@@ -239,13 +273,23 @@ mod tests {
         let mut tokens = Tokens::new_test("42");
         let exp = parse(&mut tokens).unwrap();
         let literal = exp.literal().unwrap();
-        assert_eq!(literal.value, Value::Int(42));
+        assert_eq!(literal.value, Value::Number(42.0));
     }
 
     #[test]
-    fn number_to_big() {
-        let mut tokens = Tokens::new_test("12345678901234567890");
-        parse(&mut tokens).unwrap_err();
+    fn literal_true() {
+        let mut tokens = Tokens::new_test("true");
+        let exp = parse(&mut tokens).unwrap();
+        let literal = exp.literal().unwrap();
+        assert_eq!(literal.value, Value::True);
+    }
+
+    #[test]
+    fn literal_false() {
+        let mut tokens = Tokens::new_test("false");
+        let exp = parse(&mut tokens).unwrap();
+        let literal = exp.literal().unwrap();
+        assert_eq!(literal.value, Value::False);
     }
 
     #[test]
@@ -255,7 +299,7 @@ mod tests {
         let call = exp.call().unwrap();
         assert_eq!(call.name, "print".to_string());
         let arg = call.args[0].literal().unwrap();
-        assert_eq!(arg.value, Value::Int(42));
+        assert_eq!(arg.value, Value::Number(42.0));
     }
 
     #[test]
@@ -265,9 +309,9 @@ mod tests {
         let call = exp.call().unwrap();
         assert_eq!(call.name, "print".to_string());
         let arg = call.args[0].literal().unwrap();
-        assert_eq!(arg.value, Value::Int(1));
+        assert_eq!(arg.value, Value::Number(1.0));
         let arg = call.args[1].literal().unwrap();
-        assert_eq!(arg.value, Value::Int(2));
+        assert_eq!(arg.value, Value::Number(2.0));
     }
 
     #[test]
@@ -282,7 +326,7 @@ mod tests {
         let exp = parse_block(&mut tokens).unwrap();
         let block = exp.block().unwrap();
         let statement = block.statements[0].literal().unwrap();
-        assert_eq!(statement.value, Value::Int(42));
+        assert_eq!(statement.value, Value::Number(42.0));
     }
 
     #[test]
@@ -298,7 +342,7 @@ mod tests {
         let assignment = exp.assignment().unwrap();
         assert_eq!(assignment.name, "test");
         let value = assignment.value.literal().unwrap();
-        assert_eq!(value.value, Value::Int(42));
+        assert_eq!(value.value, Value::Number(42.0));
     }
 
     #[test]
@@ -307,6 +351,17 @@ mod tests {
         let exp = parse(&mut tokens).unwrap();
         let variable = exp.variable().unwrap();
         assert_eq!(variable.name, "test");
+    }
+
+    #[test]
+    fn op_add() {
+        let mut tokens = Tokens::new_test("5 + 10");
+        let exp = parse(&mut tokens).unwrap();
+        let variable = exp.op_add().unwrap();
+        let lhs = variable.lhs.literal().unwrap();
+        let rhs = variable.rhs.literal().unwrap();
+        assert_eq!(lhs.value, Value::Number(5.0));
+        assert_eq!(rhs.value, Value::Number(10.0));
     }
 
     #[test]

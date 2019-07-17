@@ -1,4 +1,4 @@
-test = 42;
-copy_of_test = test;
-print(test, copy_of_test);
+a = 2;
+b = 3;
+print(a, b, a + b);
 print(true, false);

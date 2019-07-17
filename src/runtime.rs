@@ -52,6 +52,7 @@ impl Runtime {
                 .get(&variable.name)
                 .unwrap_or(&Value::Nothing)
                 .clone()),
+            Exp::OpAdd(add) => Ok(self.run(&add.lhs)?.add(&self.run(&add.rhs)?)),
         }
     }
 
@@ -69,7 +70,7 @@ mod tests {
     fn literal() {
         let mut run = Runtime::new(&Scope::new());
 
-        let value = Value::Int(42);
+        let value = Value::Number(42.0);
         let exp = Exp::new_literal(value.clone(), Position::new("test"));
         assert_eq!(run.run(&exp).unwrap(), value);
     }
@@ -79,7 +80,7 @@ mod tests {
         let mut run = Runtime::new(&Scope::new());
 
         let exp = Exp::new_block(
-            vec![Exp::new_literal(Value::Int(42), Position::new("test"))],
+            vec![Exp::new_literal(Value::Number(42.0), Position::new("test"))],
             Position::new("test"),
         );
         assert_eq!(run.run(&exp).unwrap(), Value::Nothing);
@@ -98,11 +99,22 @@ mod tests {
         let mut run = Runtime::new(&Scope::new());
         let set = Exp::new_assignment(
             "test".to_string(),
-            Box::new(Exp::new_literal(Value::Int(42), Position::new("test"))),
+            Box::new(Exp::new_literal(Value::Number(42.0), Position::new("test"))),
             Position::new("test"),
         );
         run.run(&set).unwrap();
         let get = Exp::new_variable("test".to_string(), Position::new("test"));
-        assert_eq!(run.run(&get).unwrap(), Value::Int(42));
+        assert_eq!(run.run(&get).unwrap(), Value::Number(42.0));
+    }
+
+    #[test]
+    fn add() {
+        let mut run = Runtime::new(&Scope::new());
+        let add = Exp::new_op_add(
+            Box::new(Exp::new_literal(Value::Number(5.0), Position::new("test"))),
+            Box::new(Exp::new_literal(Value::Number(10.0), Position::new("test"))),
+            Position::new("test"),
+        );
+        assert_eq!(run.run(&add).unwrap(), Value::Number(15.0));
     }
 }

@@ -12,6 +12,13 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn from_bool(v: bool) -> Value {
+        match v {
+            true => Value::True,
+            false => Value::False,
+        }
+    }
+
     pub fn to_string(&self) -> String {
         match self {
             Value::Number(i) => format!("{}", i),
@@ -26,6 +33,50 @@ impl Value {
         let values = (self, other);
         match values {
             (Value::Number(a), Value::Number(b)) => Value::Number(a + b),
+            _ => Value::Nothing,
+        }
+    }
+
+    pub fn subtract(&self, other: &Value) -> Value {
+        let values = (self, other);
+        match values {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a - b),
+            _ => Value::Nothing,
+        }
+    }
+
+    pub fn multiply(&self, other: &Value) -> Value {
+        let values = (self, other);
+        match values {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a * b),
+            _ => Value::Nothing,
+        }
+    }
+
+    pub fn divide(&self, other: &Value) -> Value {
+        let values = (self, other);
+        match values {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a / b),
+            _ => Value::Nothing,
+        }
+    }
+
+    pub fn equal(&self, other: &Value) -> Value {
+        Value::from_bool(self == other)
+    }
+
+    pub fn greater_than(&self, other: &Value) -> Value {
+        let values = (self, other);
+        match values {
+            (Value::Number(a), Value::Number(b)) => Value::from_bool(a > b),
+            _ => Value::Nothing,
+        }
+    }
+
+    pub fn less_than(&self, other: &Value) -> Value {
+        let values = (self, other);
+        match values {
+            (Value::Number(a), Value::Number(b)) => Value::from_bool(a < b),
             _ => Value::Nothing,
         }
     }

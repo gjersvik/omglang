@@ -37,7 +37,19 @@ pub struct Variable {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct OpAdd {
+pub enum OpType{
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Equal,
+    GreaterThan,
+    LessThan,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Operator {
+    pub op_type: OpType,
     pub lhs: Box<Exp>,
     pub rhs: Box<Exp>,
     pub pos: Position,
@@ -50,7 +62,7 @@ pub enum Exp {
     Literal(Literal),
     Assignment(Assignment),
     Variable(Variable),
-    OpAdd(OpAdd),
+    Operator(Operator),
 }
 
 impl Exp {
@@ -74,8 +86,8 @@ impl Exp {
         Exp::Variable(Variable { name, pos })
     }
 
-    pub fn new_op_add(lhs: Box<Exp>, rhs: Box<Exp>, pos: Position) -> Exp {
-        Exp::OpAdd(OpAdd { lhs, rhs, pos })
+    pub fn new_operator(op_type:OpType, lhs: Box<Exp>, rhs: Box<Exp>, pos: Position) -> Exp {
+        Exp::Operator(Operator {op_type, lhs, rhs, pos })
     }
 
     fn position(&self) -> Position {
@@ -85,7 +97,7 @@ impl Exp {
             Exp::Literal(l) => l.pos.clone(),
             Exp::Assignment(a) => a.pos.clone(),
             Exp::Variable(v) => v.pos.clone(),
-            Exp::OpAdd(a) => a.pos.clone(),
+            Exp::Operator(a) => a.pos.clone(),
         }
     }
 }
@@ -139,16 +151,22 @@ pub fn parse(tokens: &mut Tokens) -> Result<Exp> {
         )),
     }?;
 
-    match tokens.peek().token_type {
-        TokenType::OpAdd => {
-            tokens.next(); // at OpAdd
-            tokens.next(); // at next expression
-            let rhs = parse(tokens)?;
-            let pos = lhs.position();
-            Ok(Exp::new_op_add(Box::new(lhs), Box::new(rhs), pos))
-        }
-        _ => Ok(lhs),
-    }
+    let op_type = match tokens.peek().token_type {
+        TokenType::OpAdd => OpType::Add,
+        TokenType::OpSubtract => OpType::Subtract,
+        TokenType::OpMultiply => OpType::Multiply,
+        TokenType::OpDivide => OpType::Divide,
+        TokenType::OpEqual => OpType::Equal,
+        TokenType::OpGreaterThan => OpType::GreaterThan,
+        TokenType::OpLessThan => OpType::LessThan,
+        _ => return Ok(lhs),
+    };
+
+    tokens.next(); // at Operator
+    tokens.next(); // at next expression
+    let rhs = parse(tokens)?;
+    let pos = lhs.position();
+    Ok(Exp::new_operator(op_type, Box::new(lhs), Box::new(rhs), pos))
 }
 
 fn parse_identifier(tokens: &mut Tokens) -> Result<Exp> {
@@ -241,14 +259,6 @@ mod tests {
             }
         }
 
-        fn op_add(&self) -> Result<&OpAdd> {
-            if let Exp::OpAdd(exp) = self {
-                Ok(&exp)
-            } else {
-                Err(self.type_error("OpAdd"))
-            }
-        }
-
         fn name(&self) -> &'static str {
             match self {
                 Exp::Block(_) => "Block",
@@ -256,7 +266,7 @@ mod tests {
                 Exp::Literal(_) => "Literal",
                 Exp::Assignment(_) => "Assignment",
                 Exp::Variable(_) => "Variable",
-                Exp::OpAdd(_) => "OpAdd",
+                Exp::Operator(_) => "Operator",
             }
         }
 
@@ -351,17 +361,6 @@ mod tests {
         let exp = parse(&mut tokens).unwrap();
         let variable = exp.variable().unwrap();
         assert_eq!(variable.name, "test");
-    }
-
-    #[test]
-    fn op_add() {
-        let mut tokens = Tokens::new_test("5 + 10");
-        let exp = parse(&mut tokens).unwrap();
-        let variable = exp.op_add().unwrap();
-        let lhs = variable.lhs.literal().unwrap();
-        let rhs = variable.rhs.literal().unwrap();
-        assert_eq!(lhs.value, Value::Number(5.0));
-        assert_eq!(rhs.value, Value::Number(10.0));
     }
 
     #[test]

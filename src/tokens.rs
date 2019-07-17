@@ -74,6 +74,24 @@ pub enum TokenType {
     #[token = "+"]
     OpAdd,
 
+    #[token = "-"]
+    OpSubtract,
+
+    #[token = "*"]
+    OpMultiply,
+
+    #[token = "/"]
+    OpDivide,
+
+    #[token = "=="]
+    OpEqual,
+
+    #[token = ">"]
+    OpGreaterThan,
+
+    #[token = "<"]
+    OpLessThan,
+
 }
 
 #[derive(Debug)]

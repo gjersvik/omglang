@@ -2,7 +2,7 @@ use im::Vector;
 
 use super::{
     error::{OmgError, Result},
-    parser::Exp,
+    parser::{Exp, OpType, Operator},
     value::{Scope, Value},
 };
 
@@ -52,12 +52,26 @@ impl Runtime {
                 .get(&variable.name)
                 .unwrap_or(&Value::Nothing)
                 .clone()),
-            Exp::OpAdd(add) => Ok(self.run(&add.lhs)?.add(&self.run(&add.rhs)?)),
+            Exp::Operator(op) => self.run_operator(op),
         }
     }
 
     fn run_list(&mut self, expressions: &[Exp]) -> Result<Vector<Value>> {
         expressions.iter().map(|exp| self.run_exp(exp)).collect()
+    }
+
+    fn run_operator(&mut self, op: &Operator) -> Result<Value> {
+        let lhs = self.run_exp(&op.lhs)?;
+        let rhs = self.run_exp(&op.rhs)?;
+        Ok(match op.op_type {
+            OpType::Add => lhs.add(&rhs),
+            OpType::Subtract => lhs.subtract(&rhs),
+            OpType::Multiply => lhs.multiply(&rhs),
+            OpType::Divide => lhs.divide(&rhs),
+            OpType::Equal => lhs.equal(&rhs),
+            OpType::GreaterThan => lhs.greater_than(&rhs),
+            OpType::LessThan => lhs.less_than(&rhs),
+        })
     }
 }
 
@@ -105,16 +119,5 @@ mod tests {
         run.run(&set).unwrap();
         let get = Exp::new_variable("test".to_string(), Position::new("test"));
         assert_eq!(run.run(&get).unwrap(), Value::Number(42.0));
-    }
-
-    #[test]
-    fn add() {
-        let mut run = Runtime::new(&Scope::new());
-        let add = Exp::new_op_add(
-            Box::new(Exp::new_literal(Value::Number(5.0), Position::new("test"))),
-            Box::new(Exp::new_literal(Value::Number(10.0), Position::new("test"))),
-            Position::new("test"),
-        );
-        assert_eq!(run.run(&add).unwrap(), Value::Number(15.0));
     }
 }

@@ -1,32 +1,36 @@
 #![warn(clippy::all)]
 mod core_lib;
 mod error;
+mod function;
+mod module_scope;
 mod parser;
 mod runtime;
 mod tokens;
 mod value;
 
-use core_lib::global;
+use crate::core_lib::add_std_lib;
+use crate::module_scope::ModuleScope;
 use error::{Position, Result};
 use parser::parse_block;
 use runtime::Runtime;
 use tokens::Tokens;
-use value::Scope;
 
 use std::fs;
+use std::sync::Arc;
 
 pub use error::OmgError;
 
-#[macro_use]
-extern crate im;
-
 pub struct OmgLang {
-    global: Scope,
+    module: Arc<ModuleScope>,
 }
 
 impl OmgLang {
     pub fn new() -> Self {
-        OmgLang { global: global() }
+        let module = ModuleScope::new();
+        let module = add_std_lib(&module);
+        OmgLang {
+            module: Arc::new(module),
+        }
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -34,7 +38,7 @@ impl OmgLang {
         let source = OmgLang::load_file(&file)?;
         let mut tokens = Tokens::lex(&source, file)?;
         let exp = parse_block(&mut tokens)?;
-        let mut runtime = Runtime::new(&self.global);
+        let mut runtime = Runtime::new(&self.module);
         runtime.run(&exp)?;
         Ok(())
     }
@@ -49,12 +53,4 @@ impl OmgLang {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn global_test() {
-        let omg = OmgLang::new();
-        assert_eq!(omg.global, global());
-    }
-}
+mod tests {}

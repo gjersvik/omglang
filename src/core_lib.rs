@@ -1,6 +1,7 @@
+use crate::function::Function;
+use crate::module_scope::ModuleScope;
+use crate::value::Value;
 use im::Vector;
-
-use crate::value::{Scope, Value};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Native {
@@ -26,22 +27,9 @@ fn print(args: Vector<Value>) -> Value {
     Value::Nothing
 }
 
-pub fn global() -> Scope {
-    hashmap! {
-        "print".to_string() => Value::NativeFunction(Native::Print)
-    }
+pub fn add_std_lib(module: &ModuleScope) -> ModuleScope {
+    module.add_function("print", Function::NativeFunction(Native::Print))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn global_test() {
-        let global = global();
-        assert_eq!(
-            *global.get("print").unwrap(),
-            Value::NativeFunction(Native::Print)
-        );
-    }
-}
+mod tests {}

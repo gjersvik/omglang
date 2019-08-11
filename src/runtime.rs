@@ -1,19 +1,24 @@
 use im::Vector;
+use std::sync::Arc;
 
 use super::{
     error::{OmgError, Result},
+    function::Function,
+    module_scope::ModuleScope,
     parser::{Exp, OpType, Operator},
     value::{Scope, Value},
 };
 
 pub struct Runtime {
-    local: Scope,
+    module: Arc<ModuleScope>,
+    scope: Scope,
 }
 
 impl Runtime {
-    pub fn new(global: &Scope) -> Runtime {
+    pub fn new(module: &Arc<ModuleScope>) -> Runtime {
         Runtime {
-            local: global.clone(),
+            module: module.clone(),
+            scope: Scope::new(),
         }
     }
 
@@ -24,13 +29,11 @@ impl Runtime {
     fn run_exp(&mut self, exp: &Exp) -> Result<Value> {
         match exp {
             Exp::Call(call) => {
-                let v = self
-                    .local
-                    .get(&call.name)
-                    .unwrap_or(&Value::Nothing)
-                    .clone();
+                let v = self.module.get_function(&call.name);
                 match v {
-                    Value::NativeFunction(native) => Ok(native.call(self.run_list(&call.args)?)),
+                    Some(Function::NativeFunction(native)) => {
+                        Ok(native.call(self.run_list(&call.args)?))
+                    }
                     _ => Err(OmgError::new(
                         format!("Cant find function named {} to call", call.name),
                         call.pos.clone(),
@@ -44,11 +47,11 @@ impl Runtime {
             Exp::Literal(literal) => Ok(literal.value.clone()),
             Exp::Assignment(assignment) => {
                 let value = self.run_exp(&assignment.value)?;
-                self.local.insert(assignment.name.clone(), value);
+                self.scope.insert(assignment.name.clone(), value);
                 Ok(Value::Nothing)
             }
             Exp::Variable(variable) => Ok(self
-                .local
+                .scope
                 .get(&variable.name)
                 .unwrap_or(&Value::Nothing)
                 .clone()),
@@ -82,7 +85,7 @@ mod tests {
 
     #[test]
     fn literal() {
-        let mut run = Runtime::new(&Scope::new());
+        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
 
         let value = Value::Number(42.0);
         let exp = Exp::new_literal(value.clone(), Position::new("test"));
@@ -91,7 +94,7 @@ mod tests {
 
     #[test]
     fn block() {
-        let mut run = Runtime::new(&Scope::new());
+        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
 
         let exp = Exp::new_block(
             vec![Exp::new_literal(Value::Number(42.0), Position::new("test"))],
@@ -102,7 +105,7 @@ mod tests {
 
     #[test]
     fn call_not_found() {
-        let mut run = Runtime::new(&Scope::new());
+        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
 
         let exp = Exp::new_call("test".to_string(), Vec::new(), Position::new("test"));
         run.run(&exp).unwrap_err();
@@ -110,7 +113,7 @@ mod tests {
 
     #[test]
     fn set_get_variable() {
-        let mut run = Runtime::new(&Scope::new());
+        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
         let set = Exp::new_assignment(
             "test".to_string(),
             Box::new(Exp::new_literal(Value::Number(42.0), Position::new("test"))),

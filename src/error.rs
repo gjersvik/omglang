@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::fmt;
 use std::sync::Arc;
 
@@ -72,6 +73,18 @@ impl Position {
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}:{}", self.src, self.line, self.column)
+    }
+}
+
+impl From<String> for Position {
+    fn from(path: String) -> Self {
+        Position::new(path)
+    }
+}
+
+impl From<PathBuf> for Position {
+    fn from(path: PathBuf) -> Self {
+        Position::new(path.to_string_lossy())
     }
 }
 

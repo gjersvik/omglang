@@ -4,18 +4,19 @@ mod error;
 mod function;
 mod module_scope;
 mod parser;
+mod pipeline;
 mod runtime;
 mod tokens;
 mod value;
 
 use crate::core_lib::add_std_lib;
 use crate::module_scope::ModuleScope;
-use error::{Position, Result};
+use crate::pipeline::loader;
 use parser::parse_block;
 use runtime::Runtime;
 use tokens::Tokens;
+use tokio::prelude::Future;
 
-use std::fs;
 use std::sync::Arc;
 
 pub use error::OmgError;
@@ -34,21 +35,15 @@ impl OmgLang {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn run_file(&self, file: &str) -> Result<()> {
-        let source = OmgLang::load_file(&file)?;
-        let mut tokens = Tokens::lex(&source, file)?;
-        let exp = parse_block(&mut tokens)?;
-        let mut runtime = Runtime::new(&self.module);
-        runtime.run(&exp)?;
-        Ok(())
-    }
-
-    #[cfg_attr(tarpaulin, skip)]
-    fn load_file(file: &str) -> Result<String> {
-        match fs::read_to_string(file) {
-            Ok(s) => Ok(s),
-            Err(err) => Err(OmgError::new(err.to_string(), Position::new(file))),
-        }
+    pub fn run_file(&self, file: &str) -> impl Future<Item = (), Error = OmgError> {
+        let module = Arc::clone(&self.module);
+        return loader::loader(file.to_string()).and_then(move |source| {
+            let mut tokens = Tokens::lex(&source.source, &source.path)?;
+            let exp = parse_block(&mut tokens)?;
+            let mut runtime = Runtime::new(&module);
+            runtime.run(&exp)?;
+            Ok(())
+        });
     }
 }
 

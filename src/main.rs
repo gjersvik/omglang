@@ -1,5 +1,6 @@
 #![warn(clippy::all)]
 use clap::{App, Arg};
+use tokio::prelude::Future;
 
 use omglang::OmgLang;
 
@@ -18,8 +19,8 @@ fn main() {
         .get_matches();
 
     let omg = OmgLang::new();
-    match omg.run_file(matches.value_of("SRC_FILE").unwrap()) {
-        Ok(_) => (),
-        Err(err) => eprint!("{}", err),
-    };
+    let future = omg
+        .run_file(matches.value_of("SRC_FILE").unwrap())
+        .map_err(|e| eprint!("{}", e));
+    tokio::run(future);
 }

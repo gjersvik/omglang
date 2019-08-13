@@ -6,15 +6,12 @@ mod module_scope;
 mod parser;
 mod pipeline;
 mod runtime;
-mod tokens;
 mod value;
 
 use crate::core_lib::add_std_lib;
 use crate::module_scope::ModuleScope;
-use crate::pipeline::loader;
 use parser::parse_block;
 use runtime::Runtime;
-use tokens::Tokens;
 use tokio::prelude::Future;
 
 use std::sync::Arc;
@@ -37,8 +34,8 @@ impl OmgLang {
     #[cfg_attr(tarpaulin, skip)]
     pub fn run_file(&self, file: &str) -> impl Future<Item = (), Error = OmgError> {
         let module = Arc::clone(&self.module);
-        return loader::loader(file.to_string()).and_then(move |source| {
-            let mut tokens = Tokens::lex(&source.source, &source.path)?;
+        return pipeline::loader(file.to_string()).and_then(move |source| {
+            let mut tokens = pipeline::lexer(source)?;
             let exp = parse_block(&mut tokens)?;
             let mut runtime = Runtime::new(&module);
             runtime.run(&exp)?;

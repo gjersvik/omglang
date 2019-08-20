@@ -3,14 +3,13 @@ mod core_lib;
 mod error;
 mod function;
 mod module_scope;
-mod parser;
 mod pipeline;
 mod runtime;
 mod value;
 
 use crate::core_lib::add_std_lib;
 use crate::module_scope::ModuleScope;
-use parser::parse_block;
+use pipeline::parse_block;
 use runtime::Runtime;
 use tokio::prelude::Future;
 

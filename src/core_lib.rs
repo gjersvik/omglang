@@ -1,5 +1,4 @@
-use crate::pipeline::Function;
-use crate::module_scope::ModuleScope;
+use crate::pipeline::{Function, Module};
 use crate::value::Value;
 use im::Vector;
 
@@ -27,7 +26,7 @@ fn print(args: Vector<Value>) -> Value {
     Value::Nothing
 }
 
-pub fn add_std_lib(module: &ModuleScope) -> ModuleScope {
+pub fn add_std_lib(module: &Module) -> Module {
     module.add_function("print", Function::NativeFunction(Native::Print))
 }
 

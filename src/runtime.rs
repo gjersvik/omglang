@@ -3,19 +3,18 @@ use std::sync::Arc;
 
 use super::{
     error::{OmgError, Result},
-    pipeline::Function,
-    module_scope::ModuleScope,
+    pipeline::{Function, Module},
     pipeline::ast::{Exp, OpType, Operator},
     value::{Scope, Value},
 };
 
 pub struct Runtime {
-    module: Arc<ModuleScope>,
+    module: Arc<Module>,
     scope: Scope,
 }
 
 impl Runtime {
-    pub fn new(module: &Arc<ModuleScope>) -> Runtime {
+    pub fn new(module: &Arc<Module>) -> Runtime {
         Runtime {
             module: module.clone(),
             scope: Scope::new(),
@@ -84,7 +83,7 @@ mod tests {
 
     #[test]
     fn literal() {
-        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
+        let mut run = Runtime::new(&Arc::new(Module::new()));
 
         let value = Value::Number(42.0);
         let exp = Exp::new_literal(value, Position::new("test"));
@@ -93,7 +92,7 @@ mod tests {
 
     #[test]
     fn block() {
-        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
+        let mut run = Runtime::new(&Arc::new(Module::new()));
 
         let exp = Exp::new_block(
             vec![Exp::new_literal(Value::Number(42.0), Position::new("test"))],
@@ -104,7 +103,7 @@ mod tests {
 
     #[test]
     fn call_not_found() {
-        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
+        let mut run = Runtime::new(&Arc::new(Module::new()));
 
         let exp = Exp::new_call("test".to_string(), Vec::new(), Position::new("test"));
         run.run(&exp).unwrap_err();
@@ -112,7 +111,7 @@ mod tests {
 
     #[test]
     fn set_get_variable() {
-        let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
+        let mut run = Runtime::new(&Arc::new(Module::new()));
         let set = Exp::new_assignment(
             "test".to_string(),
             Box::new(Exp::new_literal(Value::Number(42.0), Position::new("test"))),

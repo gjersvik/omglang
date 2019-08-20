@@ -1,13 +1,12 @@
 #![warn(clippy::all)]
 mod core_lib;
 mod error;
-mod module_scope;
 mod pipeline;
 mod runtime;
 mod value;
 
 use crate::core_lib::add_std_lib;
-use crate::module_scope::ModuleScope;
+use crate::pipeline::Module;
 use pipeline::parse_block;
 use runtime::Runtime;
 use tokio::prelude::Future;
@@ -17,7 +16,7 @@ use std::sync::Arc;
 pub use error::OmgError;
 
 pub struct OmgLang {
-    module: Arc<ModuleScope>,
+    module: Arc<Module>,
 }
 
 impl Default for OmgLang {
@@ -28,7 +27,7 @@ impl Default for OmgLang {
 
 impl OmgLang {
     pub fn new() -> Self {
-        let module = ModuleScope::new();
+        let module = Module::new();
         let module = add_std_lib(&module);
         OmgLang {
             module: Arc::new(module),

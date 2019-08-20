@@ -1,13 +1,13 @@
 use crate::pipeline::Function;
 use im::HashMap;
 
-pub struct ModuleScope {
+pub struct Module {
     functions: HashMap<String, Function>,
 }
 
-impl ModuleScope {
+impl Module {
     pub fn new() -> Self {
-        ModuleScope {
+        Module {
             functions: HashMap::new(),
         }
     }
@@ -16,7 +16,7 @@ impl ModuleScope {
     where
         S: Into<String>,
     {
-        ModuleScope {
+        Module {
             functions: self.functions.update(name.into(), function),
         }
     }

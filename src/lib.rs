@@ -1,7 +1,6 @@
 #![warn(clippy::all)]
 mod core_lib;
 mod error;
-mod function;
 mod module_scope;
 mod pipeline;
 mod runtime;

@@ -1,4 +1,4 @@
-use crate::function::Function;
+use crate::pipeline::Function;
 use im::HashMap;
 
 pub struct ModuleScope {

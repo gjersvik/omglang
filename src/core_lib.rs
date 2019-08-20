@@ -1,4 +1,4 @@
-use crate::function::Function;
+use crate::pipeline::Function;
 use crate::module_scope::ModuleScope;
 use crate::value::Value;
 use im::Vector;

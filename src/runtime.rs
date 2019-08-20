@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use super::{
     error::{OmgError, Result},
-    function::Function,
+    pipeline::Function,
     module_scope::ModuleScope,
     pipeline::ast::{Exp, OpType, Operator},
     value::{Scope, Value},

@@ -22,6 +22,12 @@ pub struct OmgLang {
     module: Arc<ModuleScope>,
 }
 
+impl Default for OmgLang {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OmgLang {
     pub fn new() -> Self {
         let module = ModuleScope::new();
@@ -34,13 +40,13 @@ impl OmgLang {
     #[cfg_attr(tarpaulin, skip)]
     pub fn run_file(&self, file: &str) -> impl Future<Item = (), Error = OmgError> {
         let module = Arc::clone(&self.module);
-        return pipeline::loader(file.to_string()).and_then(move |source| {
+        pipeline::loader(file.to_string()).and_then(move |source| {
             let mut tokens = pipeline::lexer(source)?;
             let exp = parse_block(&mut tokens)?;
             let mut runtime = Runtime::new(&module);
             runtime.run(&exp)?;
             Ok(())
-        });
+        })
     }
 }
 

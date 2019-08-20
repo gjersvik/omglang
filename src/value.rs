@@ -10,10 +10,7 @@ pub enum Value {
 
 impl Value {
     pub fn from_bool(v: bool) -> Value {
-        match v {
-            true => Value::True,
-            false => Value::False,
-        }
+        if v { Value::True } else { Value::False }
     }
 
     pub fn to_string(&self) -> String {

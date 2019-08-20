@@ -3,7 +3,7 @@ use crate::error::{OmgError, Position};
 use tokio::{fs, prelude::Future};
 
 pub fn loader(path: String) -> impl Future<Item = Source, Error = OmgError> {
-    return fs::read(path.clone()).then(|result| match result {
+    fs::read(path.clone()).then(|result| match result {
         Ok(bytes) => match String::from_utf8(bytes) {
             Ok(source) => Ok(Source { source, path }),
             Err(err) => Err(OmgError::new(
@@ -15,5 +15,5 @@ pub fn loader(path: String) -> impl Future<Item = Source, Error = OmgError> {
             format!("Can't open {}, io error: {}", path, error),
             Position::from(path),
         )),
-    });
+    })
 }

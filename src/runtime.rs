@@ -44,17 +44,16 @@ impl Runtime {
                 self.run_list(&block.statements)?;
                 Ok(Value::Nothing)
             }
-            Exp::Literal(literal) => Ok(literal.value.clone()),
+            Exp::Literal(literal) => Ok(literal.value),
             Exp::Assignment(assignment) => {
                 let value = self.run_exp(&assignment.value)?;
                 self.scope.insert(assignment.name.clone(), value);
                 Ok(Value::Nothing)
             }
-            Exp::Variable(variable) => Ok(self
+            Exp::Variable(variable) => Ok(*self
                 .scope
                 .get(&variable.name)
-                .unwrap_or(&Value::Nothing)
-                .clone()),
+                .unwrap_or(&Value::Nothing)),
             Exp::Operator(op) => self.run_operator(op),
         }
     }
@@ -88,7 +87,7 @@ mod tests {
         let mut run = Runtime::new(&Arc::new(ModuleScope::new()));
 
         let value = Value::Number(42.0);
-        let exp = Exp::new_literal(value.clone(), Position::new("test"));
+        let exp = Exp::new_literal(value, Position::new("test"));
         assert_eq!(run.run(&exp).unwrap(), value);
     }
 

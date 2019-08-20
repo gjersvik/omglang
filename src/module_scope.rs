@@ -22,6 +22,6 @@ impl ModuleScope {
     }
 
     pub fn get_function(&self, name: &str) -> Option<Function> {
-        self.functions.get(name.into()).cloned()
+        self.functions.get(name).cloned()
     }
 }

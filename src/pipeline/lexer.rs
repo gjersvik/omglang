@@ -77,7 +77,7 @@ impl TokenExtra {
         pos.column += self.column;
         self.column = 0;
 
-        return pos;
+        pos
     }
 }
 

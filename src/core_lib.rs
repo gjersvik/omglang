@@ -9,7 +9,7 @@ pub enum Native {
 }
 
 impl Native {
-    pub fn call(&self, args: Vector<Value>) -> Value {
+    pub fn call(self, args: Vector<Value>) -> Value {
         match self {
             Native::Print => print(args),
         }

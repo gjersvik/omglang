@@ -5,7 +5,7 @@ use super::{
     error::{OmgError, Result},
     function::Function,
     module_scope::ModuleScope,
-    pipeline::parser::{Exp, OpType, Operator},
+    pipeline::ast::{Exp, OpType, Operator},
     value::{Scope, Value},
 };
 

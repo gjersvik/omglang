@@ -1,6 +1,7 @@
+pub mod ast;
 mod lexer;
 mod loader;
-pub mod parser;
+mod parser;
 mod source;
 mod tokens;
 
